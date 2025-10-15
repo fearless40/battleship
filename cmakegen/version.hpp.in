@@ -1,0 +1,6 @@
+namespace Version {
+static inline constexpr unsigned int MAJOR_VERSION =
+    ${Battleship_VERSION_MAJOR};
+static inline constexpr unsigned int MINOR_VERSION =
+    ${Battleship_VERSION_MINOR};
+} // namespace Version
