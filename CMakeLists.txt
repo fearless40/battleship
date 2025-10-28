@@ -39,6 +39,7 @@ configure_file(
 add_executable( 
    battleship 
    source/main.cpp
+   source/simpleui.cpp
 )
 
 target_include_directories ( 
@@ -56,12 +57,13 @@ set( ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 add_library( 
    util 
-   INTERFACE 
+   STATIC 
+   source/util/rowcol.cpp
 )
 
 target_include_directories( 
    util
-   INTERFACE
+   PUBLIC
    ${ROOT_DIR}/include/util
 )
 

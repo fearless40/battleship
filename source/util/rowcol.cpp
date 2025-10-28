@@ -5,7 +5,6 @@
 #include <format>
 #include <string_view>
 
-namespace battleship {
 std::string RowCol::as_base26_fmt() const {
   std::string result{base26::to_string(col.size)};
   result.append(std::to_string(row.size));
@@ -75,4 +74,3 @@ RowCol RowCol::from_string(std::string_view const value) {
 
   return {};
 }
-} // namespace battleship
