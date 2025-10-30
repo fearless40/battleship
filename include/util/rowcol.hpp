@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -76,6 +77,8 @@ struct RowCol {
   static RowCol random(Row maxRow, Col maxCol);
 
   static RowCol from_string(std::string_view const);
+
+  static std::optional<RowCol> from_string_opt(std::string_view const);
 
   friend constexpr RowCol operator-(const RowCol &rc, const Row &r) {
     return RowCol{Row{static_cast<unsigned short>(rc.row.size - r.size)},

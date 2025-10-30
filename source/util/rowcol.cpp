@@ -74,3 +74,28 @@ RowCol RowCol::from_string(std::string_view const value) {
 
   return {};
 }
+
+std::optional<RowCol> RowCol::from_string_opt(std::string_view const value) {
+  if (value.size() < 2)
+    return {};
+
+  if (value[0] <= '9' and value[0] >= '0') {
+    // Assume comma format
+    return parse_comma_fmt(value);
+  }
+
+  auto pos = value.find_first_of("0123456789");
+  if (pos == std::string_view::npos) {
+    return {};
+  }
+
+  auto letters = value.substr(0, pos);
+
+  RowCol ret;
+  if (from_chars(value.substr(pos), ret.row.size)) {
+    ret.col.size = static_cast<std::uint16_t>(base26::from_string(letters));
+    return ret;
+  }
+
+  return {};
+}
