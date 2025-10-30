@@ -33,43 +33,9 @@ configure_file(
    include/version.hpp 
 )
 
-
-# add_subdirectory( source )
-
-add_executable( 
-   battleship 
-   source/main.cpp
-   source/simpleui.cpp
-)
-
-target_include_directories ( 
-   battleship 
-   PUBLIC include 
-)
-
-target_include_directories( 
-   battleship 
-   PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/include" 
-)
-
 set( ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" )
 
-
-add_library( 
-   util 
-   STATIC 
-   source/util/rowcol.cpp
-)
-
-target_include_directories( 
-   util
-   PUBLIC
-   ${ROOT_DIR}/include/util
-)
-
-
 # add_subdirectory(external)
-# add_subdirectory(lib)
 add_subdirectory( source )
 
 

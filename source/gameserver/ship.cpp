@@ -3,9 +3,8 @@
 #include "randomutil.hpp"
 // #include <terminal.hpp>
 
-namespace battleship {
-
-std::optional<Ship> ship_at_position(Ships const &ships, RowCol pos) {
+std::optional<Ship> Ship::ship_at_position(Ship::Ships const &ships,
+                                           RowCol pos) {
   for (auto &ship : ships) {
     int y = (int)pos.row.size;
     int x = (int)pos.col.size;
@@ -15,13 +14,13 @@ std::optional<Ship> ship_at_position(Ships const &ships, RowCol pos) {
   return {};
 }
 
-std::optional<Ships> random_ships(GameLayout const &game) {
+std::optional<Ship::Ships> Ship::random_ships(GameLayout const &game) {
 
   // Validate that it is a valid game board
   if (!game.is_valid())
     return {};
 
-  Ships ships;
+  Ship::Ships ships;
   ships.reserve(game.maxShipSize.size - game.minShipSize.size + 1);
 
   for (ShipDefinition ship_id = game.minShipSize;
@@ -61,5 +60,3 @@ std::optional<Ships> random_ships(GameLayout const &game) {
 
   return ships;
 }
-
-} // namespace battleship

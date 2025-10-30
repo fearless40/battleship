@@ -4,6 +4,7 @@
 #include "rowcol.hpp"
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 enum class Orientation { Horizontal, Vertical };
@@ -39,6 +40,18 @@ struct Ship {
   constexpr bool is_valid() const noexcept {
     return (row_size() == 0 && col_size() == shiplength.size - 1) ||
            (row_size() == shiplength.size - 1 && col_size() == 0);
+  }
+
+  constexpr bool is_placed_valid(GameLayout const &layout) const noexcept {
+    if (!is_valid())
+      return false;
+    if (location.x < 0 || location.x >= layout.nbrCols.size ||
+        location.x2 < 0 || location.x2 >= layout.nbrCols.size ||
+        location.y < 0 || location.y >= layout.nbrRows.size ||
+        location.y2 < 0 || location.y2 >= layout.nbrRows.size)
+      return false;
+
+    return true;
   }
 
   constexpr std::optional<std::size_t> ship_section_hit(RowCol const &pos) {
