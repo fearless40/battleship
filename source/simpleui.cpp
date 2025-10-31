@@ -6,7 +6,9 @@
 #include <cstddef>
 #include <exception>
 #include <format>
+#include <ios>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <numeric>
 #include <optional>
@@ -166,9 +168,8 @@ int get_user_integer(int min, int max, int def_value, DisplayFunction &&fn) {
 }
 
 template <std::ranges::random_access_range Range, typename Function>
-Range::iterator menu_choice(Range &&menuItems, const std::string prompt,
-                            Function &&fn) {
-  bool ok_continue = false;
+auto menu_choice(Range &&menuItems, const std::string &prompt, Function &&fn) {
+  int attemps = 0;
   do {
 
     for (auto const [index, value] : std::views::enumerate(menuItems)) {
@@ -182,13 +183,21 @@ Range::iterator menu_choice(Range &&menuItems, const std::string prompt,
 
     if (std::cin.fail()) {
       std::println("Failed to parse the input. Please try again.");
+      std::cin.clear();
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      choice = 0;
     }
 
-    if (choice >= 1 and
-        choice <= std::distance(menuItems.begin(), menuItems.end()) + 1) {
-      return menuItems[choice - 1];
+    if (choice >= 1 and choice <= menuItems.size()) {
+      return menuItems.begin() + (choice - 1);
     }
-  } while (ok_continue);
+
+    std::println(
+        "Invalid choice: {}{}{} must choose number between {}1{} to {}{}{}",
+        colors::red, choice, colors::reset, colors::green, colors::reset,
+        colors::green, menuItems.size(), colors::reset);
+    std::println("Attempt {} out of 3", ++attemps);
+  } while (attemps < 3);
 
   return menuItems.end();
 }
@@ -263,8 +272,36 @@ const std::string shipdef_to_name(ShipDefinition def) {
 }
 
 std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
-  static const std::array<std::string, 2> extra_options{"Randomize All",
-                                                        "Quit"};
+  struct MenuOptions {
+    enum class OptionType { ship, action };
+    std::string text;
+    OptionType otype;
+    ShipDefinition shipid;
+    bool already_chosen{false};
+  };
+  using namespace std::literals;
+
+  using MenuAction = std::pair<std::string_view, ShipDefinition>;
+
+  static const std::array<std::pair<std::string_view, ShipDefinition>, 2>
+      menu_actions{MenuAction{"Randomize All"sv, ShipDefinition{0}},
+                   MenuAction{"Quit"sv, ShipDefinition{1}}};
+
+  std::vector<MenuOptions> options;
+
+  std::ranges::transform(
+      std::views::iota(layout.minShipSize.size, layout.maxShipSize.size + 1),
+      std::back_inserter(options), [](auto value) -> MenuOptions {
+        return {.text = shipdef_to_name(ShipDefinition(value)),
+                .otype = MenuOptions::OptionType::ship,
+                .shipid = ShipDefinition(value)};
+      });
+  std::ranges::transform(menu_actions, std::back_inserter(options),
+                         [](auto const value) -> MenuOptions {
+                           return {.text = std::string(value.first),
+                                   .otype = MenuOptions::OptionType::ship,
+                                   .shipid = value.second};
+                         });
 
   std::print(colors::reset);
   std::println(
@@ -280,8 +317,20 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
   ships.reserve(nbrShips);
 
   while (ships.size() < nbrShips) {
-
     print_game_board(std::cout, layout, ships);
+
+    // Update the menu to have the correct text to display
+    for (auto const &shipid : ships) {
+      auto it = std::ranges::find_if(options, [](auto cosnt &opt) {
+        opt.shipid == shipid &&opt.otype ==
+            MenuOptions::OptionType::ship &&opt.already_chosen == false;
+      });
+      if (it != options.end()) {
+            *it.text = std::format("{} [{}Placed{}] [{}Ship Size: {}{}], shipdef_to_name(*it.shipid), colors::light_gray, colors::reset, colors::light_gray, opt.shipid.size, colors::reset); 
+            *it
+            
+   
+
     int menuSelection = get_user_integer(
         min_size, max_size + extra_options.size(), min_size, [&]() {
           std::println("Ships to select: ");
@@ -309,80 +358,86 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
         });
 
     if (auto ship_id = menuSelection + min_size; ship_id > max_size) {
-      // In extra menu options
-      auto extra_option = menuSelection - max_size;
-      switch (extra_option) {
-      case 0: // Randomize
-      {
-        auto ships_opt = Ship::random_ships(layout);
-        if (ships_opt)
-          ships = std::move(ships_opt.value());
+          // In extra menu options
+          auto extra_option = menuSelection - max_size;
+          switch (extra_option) {
+          case 0: // Randomize
+          {
+            auto ships_opt = Ship::random_ships(layout);
+            if (ships_opt)
+              ships = std::move(ships_opt.value());
 
-      } break;
-      case 1: // Quit
-        return {};
-      }
+          } break;
+          case 1: // Quit
+            return {};
+          }
     } else {
-      // Ask for ship position
+          // Ask for ship position
 
-      std::print(colors::reset);
-      std::println("Place the ship by typing in the placement by using ColRow "
-                   "style excel input. For instance a8.");
-      std::print("Please input: {}", colors::light_gray);
-      std::string row_col, orientation;
-      std::cin >> row_col;
-      std::println("Please choose orientation: {}v{} for Vertical, {}h{} for "
-                   "Horizontal",
-                   colors::green, colors::reset, colors::green, colors::reset);
-      std::print("(v) or h {}", colors::light_gray);
-      std::cin >> orientation;
+          std::print(colors::reset);
+          std::println(
+              "Place the ship by typing in the placement by using ColRow "
+              "style excel input. For instance a8.");
+          std::print("Please input: {}", colors::light_gray);
+          std::string row_col, orientation;
+          std::cin >> row_col;
+          std::println(
+              "Please choose orientation: {}v{} for Vertical, {}h{} for "
+              "Horizontal",
+              colors::green, colors::reset, colors::green, colors::reset);
+          std::print("(v) or h {}", colors::light_gray);
+          std::cin >> orientation;
 
-      auto rc = RowCol::from_string(row_col);
-      AABB pos;
+          auto rc = RowCol::from_string(row_col);
+          AABB pos;
 
-      if (orientation == "" || orientation == "v")
-        pos = {rc.col.size, rc.row.size, rc.col.size,
-               static_cast<int>(rc.row.size + ship_id - 1)};
-      else
-        pos = {rc.col.size, rc.row.size,
-               static_cast<int>(rc.col.size + ship_id - 1), rc.row.size};
+          if (orientation == "" || orientation == "v")
+            pos = {rc.col.size, rc.row.size, rc.col.size,
+                   static_cast<int>(rc.row.size + ship_id - 1)};
+          else
+            pos = {rc.col.size, rc.row.size,
+                   static_cast<int>(rc.col.size + ship_id - 1), rc.row.size};
 
-      if (auto shipFound =
-              std::ranges::find(ships, ShipDefinition(ship_id), &Ship::id);
-          shipFound != ships.end())
-        shipFound->location = pos;
-      else
-        ships.emplace_back(ShipDefinition(ship_id), pos);
+          if (auto shipFound =
+                  std::ranges::find(ships, ShipDefinition(ship_id), &Ship::id);
+              shipFound != ships.end())
+            shipFound->location = pos;
+          else
+            ships.emplace_back(ShipDefinition(ship_id), pos);
 
-      if (Ship::any_collisions(ships) ||
-          std::ranges::none_of(ships, [&](auto &ship) {
-            return ship.is_placed_valid(layout);
-          })) {
-        std::println(
-            "{}Ships off the map or colliding will reset the last chosen "
-            "ship. Press any key to continue.{}",
-            colors::light_gray, colors::reset);
-        std::cin.get();
-        if (auto shipFound =
-                std::ranges::find(ships, ShipDefinition(ship_id), &Ship::id);
-            shipFound != ships.end()) {
-          auto it = ships.erase(shipFound);
-        }
-      }
+          if (Ship::any_collisions(ships) ||
+              std::ranges::none_of(ships, [&](auto &ship) {
+                return ship.is_placed_valid(layout);
+              })) {
+            std::println(
+                "{}Ships off the map or colliding will reset the last chosen "
+                "ship. Press any key to continue.{}",
+                colors::light_gray, colors::reset);
+            std::cin.get();
+            if (auto shipFound = std::ranges::find(
+                    ships, ShipDefinition(ship_id), &Ship::id);
+                shipFound != ships.end()) {
+              auto it = ships.erase(shipFound);
+            }
+          }
     }
 
     std::print("{}{}", erase::all, move::home);
-  }
-  return {};
-}
+      }
+      return {};
+    }
 
-void begin_game() {
-  // Only Plays Standard rules
+    void begin_game() {
+      // Only Plays Standard rules
 
-  std::println("Welcome to battleship.\n Please select an AI to play against.");
+      std::println(
+          "Welcome to battleship.\n Please select an AI to play against.");
 
-  auto choice = menu_choice(AIChoices, "Select AI",
-                            [](auto const &v) { return v; })
+      auto choice =
+          menu_choice(AIChoices, "Select AI", [](auto const &v) { return v; });
+      std::println("You chose: {}", *choice);
+
+      return;
 
       int selection = get_user_integer(1, 3, 1, [&]() {
         std::size_t count{1};
@@ -393,18 +448,18 @@ void begin_game() {
         std::print("Selection: {}", colors::green);
       });
 
-  std::println("{}You chose: {}{}{}", colors::reset, colors::green,
-               AIChoices[selection - 1], colors::reset);
+      std::println("{}You chose: {}{}{}", colors::reset, colors::green,
+                   AIChoices[selection - 1], colors::reset);
 
-  std::print(erase::all);
+      std::print(erase::all);
 
-  GameLayout layout;
-  Ship::Ships ships;
+      GameLayout layout;
+      Ship::Ships ships;
 
-  std::print(move::home);
-  ships = place_ships(layout);
-  if (ships.size() > 0) {
-    std::print("{}{}", erase::all, move::home);
-    print_game_board(std::cout, layout, ships);
-  }
-}
+      std::print(move::home);
+      // ships = place_ships(layout);
+      if (ships.size() > 0) {
+        std::print("{}{}", erase::all, move::home);
+        print_game_board(std::cout, layout, ships);
+      }
+    }
