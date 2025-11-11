@@ -402,6 +402,41 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
   return {};
 }
 
+void play(const GameLayout &layout, Ship::Ships &&playerShips,
+          Ship::Ships &&aiShips, std::unique_ptr<AI> ai) {
+  GameServer server;
+  server.set_layout(layout);
+  auto player1 = server.create_player(HUMAN_ID, std::move(playerShips));
+  auto player2 = server.create_player(AI_ID, std::move(aiShips));
+
+  server.set_first_player(player1);
+
+  server.begin_game();
+
+  do {
+    auto player = server.get_current_player();
+    if (player.id() == HUMAN_ID) {
+      ask_human()
+    }
+    if (player.id() == AI_ID) {
+      auto guess = ai->guess();
+      if (guess) {
+        player.guess(guess);
+        auto result = player.last_guess_result();
+        if (result.hit()) {
+          ai->hit();
+        }
+        if (result.miss()) {
+          ai->miss();
+        }
+        if (result.sink()) {
+          ai->sink(result.shipdef)
+        }
+      }
+    }
+  } while (server.next_round());
+}
+
 void begin_game() {
   // Only Plays Standard rules
 
@@ -420,8 +455,11 @@ void begin_game() {
   auto ships_opt = place_ships(layout);
   if (ships_opt)
     ships = std::move(ships_opt.value());
-  if (ships.size() > 0) {
+  if (ships.size() == 4) {
     std::print("{}{}", erase::all, move::home);
     print_game_board(std::cout, layout, ships);
   }
+
+  if (auto aiShip = Ship::random_ships(layout); aiShip)
+    game_begin(ships, aiShip.value(), AiPlayer);
 }
