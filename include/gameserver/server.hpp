@@ -139,60 +139,83 @@ private:
 
   const Player &get_player(ID id) const { return mPlayers[id.value]; }
 
-public:
-  // Methods
-  ClassicGameServer(const GameLayout &layout) : mLayout(layout) {}
-
-  std::optional<ClientPlayer> set_player(UserID user_id, Ship::Ships &&ships) {
-    if (mGame_started)
-      return {};
-
-    auto &player = mPlayers[mCurrent_player];
-    player.id = ID(mCurrent_player);
-    player.ships = std::move(ships);
-    player.user_id = user_id;
-    player.hits.reserve(player.ships.size());
-
-    for (const auto &s : player.ships) {
-      player.hits.emplace_back(std::bitset<32>{}, s.id());
-    }
-
-    ++mCurrent_player;
-    return ClientPlayer(*this, player.id, player.user_id);
+  Player &get_target_of_player(ID id) noexcept {
+    if (id == ID(0))
+      return mPlayers[1];
+    if (id == ID(1))
+      return mPlayers[0];
+    return mPlayers[0];
   }
 
-  void set_first_player(const ClientPlayer &player) {
-    if (mGame_started)
+  void fire_single_shot(const ClientPlayer &player, RowCol guess) {
+    if (player.id() != ID(mCurrent_player))
       return;
 
-    mCurrent_player = player.id().value;
-  }
+    auto enemy = get_target_of_player(player.id());
+    auto current = mPlayers[player.id().value];
 
-  bool game_finished() const noexcept { return mGame_won; }
+    if (auto ship_at = Ship::ship_at_position(enemy.ships, guess); ship_at) {
+      auto ship = ship_at.value();
+      if (auto section_opt = ship.ship_section_hit(guess); section_opt) {
+        auto index = mLayout.shipdef_to_index(ship.id());
+        enemy.hits[index].hits.set(section_opt.value(), true);
+      }
 
-  std::size_t current_round() { return mRound_count; }
-  bool next_round() {
-    if (!mGame_started) {
-      mGame_started = true;
-      mGame_won = false;
-      mRound_count = 0;
-      return true;
-    }
+    public:
+      // Methods
+      ClassicGameServer(const GameLayout &layout) : mLayout(layout) {}
 
-    ++mRound_count;
-    ++mCurrent_player;
-    if (mCurrent_player > 1)
-      mCurrent_player = 0;
+      std::optional<ClientPlayer> set_player(UserID user_id,
+                                             Ship::Ships && ships) {
+        if (mGame_started)
+          return {};
 
-    if (is_game_over()) {
-      mGame_won = true;
-      mGame_started = false;
-      return false;
-    }
+        auto &player = mPlayers[mCurrent_player];
+        player.id = ID(mCurrent_player);
+        player.ships = std::move(ships);
+        player.user_id = user_id;
+        player.hits.reserve(player.ships.size());
 
-    return true;
-  }
+        for (const auto &s : player.ships) {
+          player.hits.emplace_back(std::bitset<32>{}, s.id());
+        }
 
-  // Returns true if game is not won;
-};
-} // namespace v1
+        ++mCurrent_player;
+        return ClientPlayer(*this, player.id, player.user_id);
+      }
+
+      void set_first_player(const ClientPlayer &player) {
+        if (mGame_started)
+          return;
+
+        mCurrent_player = player.id().value;
+      }
+
+      bool game_finished() const noexcept { return mGame_won; }
+
+      std::size_t current_round() { return mRound_count; }
+      bool next_round() {
+        if (!mGame_started) {
+          mGame_started = true;
+          mGame_won = false;
+          mRound_count = 0;
+          return true;
+        }
+
+        ++mRound_count;
+        ++mCurrent_player;
+        if (mCurrent_player > 1)
+          mCurrent_player = 0;
+
+        if (is_game_over()) {
+          mGame_won = true;
+          mGame_started = false;
+          return false;
+        }
+
+        return true;
+      }
+
+      // Returns true if game is not won;
+    };
+  } // namespace v1
