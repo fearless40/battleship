@@ -13,6 +13,16 @@ struct Response {
   static constexpr Response Sink(ShipDefinition ship) {
     return {ResponseValue::sink, ship};
   }
+
+  constexpr bool is_hit() const noexcept {
+    return value == ResponseValue::hit;
+  };
+  constexpr bool is_miss() const noexcept {
+    return value == ResponseValue::miss;
+  };
+  constexpr bool is_sunk() const noexcept {
+    return value == ResponseValue::sink;
+  };
 };
 
 // namespace Response

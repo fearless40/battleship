@@ -62,6 +62,7 @@ target_link_libraries(
    PUBLIC 
    gameserver
    util
+   AIBasic
 )
 
 target_include_directories ( 

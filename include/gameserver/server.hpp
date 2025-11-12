@@ -6,11 +6,11 @@
 #include "ship.hpp"
 #include <algorithm>
 #include <array>
+#include <asm-generic/errno.h>
 #include <bitset>
 #include <compare>
 #include <cstddef>
 #include <iterator>
-#include <numeric>
 #include <optional>
 #include <span>
 
@@ -30,7 +30,7 @@ using UserID = detail::TypedID<detail::UserID>;
 
 class ClassicGameServer {
 public:
-  using history = std::pair<RowCol, Response>;
+  using History = std::pair<RowCol, Response>;
   class ClientPlayer {
     ClassicGameServer &mServer;
     ID mId;
@@ -54,7 +54,7 @@ public:
       return player.shots.back().second;
     }
 
-    const std::span<const history> prior_shots() const noexcept {
+    const std::span<const History> prior_shots() const noexcept {
       const auto &player = mServer.get_player(mId);
       return {player.shots};
     }
@@ -102,7 +102,7 @@ private:
     UserID user_id;
     std::vector<ShipHit> hits;
     Ship::Ships ships;
-    std::vector<history> shots;
+    std::vector<History> shots;
   };
 
 private:
@@ -147,75 +147,106 @@ private:
     return mPlayers[0];
   }
 
-  void fire_single_shot(const ClientPlayer &player, RowCol guess) {
-    if (player.id() != ID(mCurrent_player))
-      return;
+  void set_history_of_player(Player &player, RowCol guess,
+                             Response &&response) {
+    player.shots.emplace_back(guess, response);
+  }
 
-    auto enemy = get_target_of_player(player.id());
-    auto current = mPlayers[player.id().value];
+  bool fire_single_shot(const ClientPlayer &player, RowCol guess) {
+    if (player.id() != ID(mCurrent_player))
+      return false;
+
+    if (!mLayout.is_row_col_valid(guess))
+      return false;
+
+    auto &enemy = get_target_of_player(player.id());
+    auto &current = mPlayers[player.id().value];
 
     if (auto ship_at = Ship::ship_at_position(enemy.ships, guess); ship_at) {
       auto ship = ship_at.value();
       if (auto section_opt = ship.ship_section_hit(guess); section_opt) {
         auto index = mLayout.shipdef_to_index(ship.id());
-        enemy.hits[index].hits.set(section_opt.value(), true);
+        auto &ship_health = enemy.hits[index];
+        ship_health.hits.set(section_opt.value(), true);
+        if (ship_health.is_sunk())
+          set_history_of_player(current, guess, Response::Sink(ship_health.id));
+        else
+          set_history_of_player(current, guess, Response::Hit());
       }
+    } else
+      set_history_of_player(current, guess, Response::Miss());
 
-    public:
-      // Methods
-      ClassicGameServer(const GameLayout &layout) : mLayout(layout) {}
+    return true;
+  }
 
-      std::optional<ClientPlayer> set_player(UserID user_id,
-                                             Ship::Ships && ships) {
-        if (mGame_started)
-          return {};
+public:
+  // Methods
+  ClassicGameServer(const GameLayout &layout) : mLayout(layout) {}
 
-        auto &player = mPlayers[mCurrent_player];
-        player.id = ID(mCurrent_player);
-        player.ships = std::move(ships);
-        player.user_id = user_id;
-        player.hits.reserve(player.ships.size());
+  std::optional<ClientPlayer> set_player(UserID user_id, Ship::Ships &&ships) {
+    if (mGame_started)
+      return {};
 
-        for (const auto &s : player.ships) {
-          player.hits.emplace_back(std::bitset<32>{}, s.id());
-        }
+    auto &player = mPlayers[mCurrent_player];
+    player.id = ID(mCurrent_player);
+    player.ships = std::move(ships);
+    player.user_id = user_id;
+    player.hits.reserve(player.ships.size());
 
-        ++mCurrent_player;
-        return ClientPlayer(*this, player.id, player.user_id);
-      }
+    for (const auto &s : player.ships) {
+      player.hits.emplace_back(std::bitset<32>{}, s.id());
+    }
 
-      void set_first_player(const ClientPlayer &player) {
-        if (mGame_started)
-          return;
+    ++mCurrent_player;
+    return ClientPlayer(*this, player.id, player.user_id);
+  }
 
-        mCurrent_player = player.id().value;
-      }
+  std::optional<ClientPlayer> find_player(UserID id) {
+    auto it = std::ranges::find(mPlayers, id, &Player::user_id);
+    if (it != mPlayers.end())
+      return ClientPlayer{*this, it->id, it->user_id};
 
-      bool game_finished() const noexcept { return mGame_won; }
+    return {};
+  }
 
-      std::size_t current_round() { return mRound_count; }
-      bool next_round() {
-        if (!mGame_started) {
-          mGame_started = true;
-          mGame_won = false;
-          mRound_count = 0;
-          return true;
-        }
+  ClientPlayer get_current_player() noexcept {
+    auto &player = mPlayers[mCurrent_player];
+    return {*this, player.id, player.user_id};
+  }
 
-        ++mRound_count;
-        ++mCurrent_player;
-        if (mCurrent_player > 1)
-          mCurrent_player = 0;
+  void set_first_player(const ClientPlayer &player) {
+    if (mGame_started)
+      return;
 
-        if (is_game_over()) {
-          mGame_won = true;
-          mGame_started = false;
-          return false;
-        }
+    mCurrent_player = player.id().value;
+  }
 
-        return true;
-      }
+  bool game_finished() const noexcept { return mGame_won; }
 
-      // Returns true if game is not won;
-    };
-  } // namespace v1
+  std::size_t current_round() { return mRound_count; }
+  bool next_round() {
+    if (!mGame_started) {
+      mGame_started = true;
+      mGame_won = false;
+      mRound_count = 0;
+      return true;
+    }
+
+    ++mCurrent_player;
+    if (mCurrent_player > 1) {
+      mCurrent_player = 0;
+      ++mRound_count;
+    }
+
+    if (is_game_over()) {
+      mGame_won = true;
+      mGame_started = false;
+      return false;
+    }
+
+    return true;
+  }
+
+  // Returns true if game is not won;
+};
+} // namespace v1

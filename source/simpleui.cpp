@@ -1,9 +1,14 @@
+#include "actionresponse.hpp"
+#include "ai/ai.hpp"
+#include "ai/averageai.hpp"
+#include "ai/bestai.hpp"
+#include "ai/stupidai.hpp"
 #include "gameserver/gamelayout.hpp"
 #include "gameserver/ship.hpp"
+#include "server.hpp"
 #include "util/baseconv.hpp"
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cstddef>
 #include <exception>
 #include <format>
@@ -11,6 +16,7 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <print>
@@ -404,37 +410,49 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
 
 void play(const GameLayout &layout, Ship::Ships &&playerShips,
           Ship::Ships &&aiShips, std::unique_ptr<AI> ai) {
-  GameServer server;
-  server.set_layout(layout);
-  auto player1 = server.create_player(HUMAN_ID, std::move(playerShips));
-  auto player2 = server.create_player(AI_ID, std::move(aiShips));
+  const auto HUMAN_ID = UserID(1);
+  const auto AI_ID = UserID(2);
 
-  server.set_first_player(player1);
+  ClassicGameServer server{layout};
 
-  server.begin_game();
+  if (auto human_player_opt =
+          server.set_player(HUMAN_ID, std::move(playerShips));
+      !human_player_opt)
+    return;
 
-  do {
+  if (auto ai_player_opt = server.set_player(AI_ID, std::move(aiShips));
+      !ai_player_opt)
+    return;
+
+  while (server.next_round()) {
     auto player = server.get_current_player();
-    if (player.id() == HUMAN_ID) {
-      ask_human()
+    if (player.user_id() == HUMAN_ID) {
+      player.fire_single_shot(RowCol(Row(0), Col(0)));
     }
-    if (player.id() == AI_ID) {
+    if (player.user_id() == AI_ID) {
       auto guess = ai->guess();
       if (guess) {
-        player.guess(guess);
-        auto result = player.last_guess_result();
-        if (result.hit()) {
+        if (!player.fire_single_shot(guess.value_or(RowCol{Row{0}, Col{0}})))
+          return;
+        auto response = player.last_response();
+        switch (response.value) {
+          using enum Response::ResponseValue;
+        case hit:
           ai->hit();
-        }
-        if (result.miss()) {
+          break;
+        case miss:
           ai->miss();
-        }
-        if (result.sink()) {
-          ai->sink(result.shipdef)
+          break;
+        case sink:
+          ai->sink(response.ship);
+          break;
+        default:
+          ai->miss();
+          break;
         }
       }
     }
-  } while (server.next_round());
+  }
 }
 
 void begin_game() {
@@ -460,6 +478,26 @@ void begin_game() {
     print_game_board(std::cout, layout, ships);
   }
 
+  std::unique_ptr<AI> ai_ptr;
+
+  auto pos = std::distance(AIChoices.begin(), choice);
+
+  switch (pos) {
+  default:
+  case 0:
+    ai_ptr = std::make_unique<StupidAI>();
+    break;
+  case 1:
+    ai_ptr = std::make_unique<AverageAI>();
+    break;
+  case 2:
+    ai_ptr = std::make_unique<BestAI>();
+    break;
+  }
+
+  ai_ptr->new_game(layout);
+
   if (auto aiShip = Ship::random_ships(layout); aiShip)
-    game_begin(ships, aiShip.value(), AiPlayer);
+    play(layout, std::move(ships), std::move(aiShip.value()),
+         std::move(ai_ptr));
 }
