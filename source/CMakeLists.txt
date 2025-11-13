@@ -11,6 +11,16 @@ target_include_directories(
    ${ROOT_DIR}/include/util
 )
 
+add_library( terminal 
+   INTERFACE   
+)
+
+target_include_directories(
+   terminal
+   INTERFACE
+   "${ROOT_DIR}/include/terminal"
+)
+
 
 add_library(
    gameserver 

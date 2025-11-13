@@ -1,4 +1,5 @@
 // #include "version.hpp"
+#include "terminal/image.hpp"
 #include <iostream>
 
 void begin_game();
