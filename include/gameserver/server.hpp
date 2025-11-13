@@ -12,7 +12,6 @@
 #include <cstddef>
 #include <iterator>
 #include <optional>
-#include <print>
 #include <span>
 
 inline namespace v1 {
@@ -157,17 +156,12 @@ private:
   }
 
   bool fire_single_shot(const ClientPlayer &player, RowCol guess) {
-    if (player.id() != ID(mCurrent_player)) {
+    if (player.id() != ID(mCurrent_player))
 
-      std::println("ID of player not current player: {} != {}",
-                   player.id().value, mCurrent_player);
       return false;
-    }
 
-    if (!mLayout.is_row_col_valid(guess)) {
-      std::println("Invalid shjot per layout.");
+    if (!mLayout.is_row_col_valid(guess))
       return false;
-    }
 
     auto &enemy = get_target_of_player(player.id());
     auto &current = mPlayers[player.id().value];
