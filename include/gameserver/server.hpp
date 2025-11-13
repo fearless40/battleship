@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <iterator>
 #include <optional>
+#include <print>
 #include <span>
 
 inline namespace v1 {
@@ -47,7 +48,9 @@ public:
     ClientPlayer(ClassicGameServer &serv, ID playerid, UserID user_id)
         : mServer(serv), mId(playerid), mUser_id(user_id) {};
 
-    bool fire_single_shot(RowCol guess) { return false; }
+    bool fire_single_shot(RowCol guess) {
+      return mServer.fire_single_shot(*this, guess);
+    }
 
     Response last_response() const noexcept {
       const auto player = mServer.get_player(mId);
@@ -86,6 +89,8 @@ public:
     constexpr auto id() const noexcept { return mId; }
 
     constexpr auto user_id() const noexcept { return mUser_id; }
+
+    constexpr auto round() const noexcept { return mServer.current_round(); }
   };
 
   friend class ClientPlayer;
@@ -117,7 +122,7 @@ private:
 private:
   // Private methods
   constexpr std::size_t number_ships() const noexcept {
-    return mLayout.maxShipSize.size - mLayout.minShipSize.size;
+    return (mLayout.maxShipSize.size - mLayout.minShipSize.size) + 1;
   }
 
   bool did_player_lose(ID player_id) const noexcept {
@@ -132,7 +137,6 @@ private:
     for (auto &p : mPlayers) {
       if (did_player_lose(p.id) == true)
         return true;
-      ;
     }
     return false;
   }
@@ -153,11 +157,17 @@ private:
   }
 
   bool fire_single_shot(const ClientPlayer &player, RowCol guess) {
-    if (player.id() != ID(mCurrent_player))
-      return false;
+    if (player.id() != ID(mCurrent_player)) {
 
-    if (!mLayout.is_row_col_valid(guess))
+      std::println("ID of player not current player: {} != {}",
+                   player.id().value, mCurrent_player);
       return false;
+    }
+
+    if (!mLayout.is_row_col_valid(guess)) {
+      std::println("Invalid shjot per layout.");
+      return false;
+    }
 
     auto &enemy = get_target_of_player(player.id());
     auto &current = mPlayers[player.id().value];
@@ -210,6 +220,8 @@ public:
   }
 
   ClientPlayer get_current_player() noexcept {
+    if (mCurrent_player > 1)
+      mCurrent_player = 0;
     auto &player = mPlayers[mCurrent_player];
     return {*this, player.id, player.user_id};
   }
@@ -245,6 +257,16 @@ public:
     }
 
     return true;
+  }
+
+  std::optional<ClientPlayer> winner() noexcept {
+    if (mGame_won == false)
+      return {};
+    for (auto &p : mPlayers) {
+      if (!did_player_lose(p.id))
+        return ClientPlayer(*this, p.id, p.user_id);
+    }
+    return {};
   }
 
   // Returns true if game is not won;

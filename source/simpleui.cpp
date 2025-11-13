@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <format>
 #include <ios>
@@ -225,8 +226,25 @@ private:
   const std::string_view m_value;
 };
 
-void print_game_board(std::ostream &s, GameLayout const &layout,
-                      Ship::Ships const &ships) {
+class PixelScreen {
+public:
+  enum class PixelFlags : unsigned char { reset_color = 0b00000001 };
+
+private:
+  struct Pixel {
+    unsigned char flags;
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+    std::uint32_t unicode;
+  };
+};
+
+// Callback is a function that returns bool : true if it drew somwthing and
+// false if it did not. Callback accepts a RowCol
+template <class CallBack>
+void print_board(std::ostream &s, GameLayout const &layout,
+                 CallBack &&callback) {
   // Write header
   //    A B C D E F G H I J K L
   //    _______________
@@ -257,18 +275,24 @@ void print_game_board(std::ostream &s, GameLayout const &layout,
       s << " ";
     s << row << "│";
     for (std::size_t col = 0; col < layout.nbrCols.size; ++col) {
-      if (auto ship = Ship::ship_at_position(
-              ships, RowCol{Row{static_cast<unsigned short>(row)},
-                            Col{static_cast<unsigned short>(col)}});
-          ship) {
-        s << colors::red << ship.value().id().size;
-      } else {
+      if (!callback(RowCol(Row(row), Col(col))))
         s << colors::dark_gray << ".";
-      }
+
       s << colors::reset << " ";
     }
     s << el;
   }
+}
+
+void print_game_board(std::ostream &s, GameLayout const &layout,
+                      Ship::Ships const &ships) {
+  print_board(s, layout, [&](RowCol rc) {
+    if (auto ship = Ship::ship_at_position(ships, rc); ship) {
+      s << colors::red << ship.value().id().size;
+      return true;
+    }
+    return false;
+  });
 }
 
 const std::string shipdef_to_name(ShipDefinition def) {
@@ -408,6 +432,71 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
   return {};
 }
 
+void human_play(ClassicGameServer::ClientPlayer &p, const GameLayout &layout) {
+  // Clear the screen
+  std::print(erase::all);
+  std::print(move::home);
+
+  std::print(colors::green);
+  std::println("Your turn -- Round: {}{}{}", colors::red, p.round(),
+               colors::reset);
+
+  std::println("Your guesses: ");
+  std::println("---------------------------------------------------------");
+  auto history = p.prior_shots();
+  print_board(std::cout, layout, [&](RowCol rc) {
+    auto it =
+        std::ranges::find(history, rc, &ClassicGameServer::History::first);
+    if (it == history.end())
+      return false;
+
+    if (it->second.is_hit())
+      std::print("{}{}", colors::green, 'X');
+    else if (it->second.is_sunk())
+      std::print("{}{}", colors::green, it->second.ship.size);
+    else if (it->second.is_miss())
+      std::print("{}{}", colors::red, 'O');
+
+    return true;
+  });
+
+  auto player_ship_health = p.ships_all_hits();
+  for (auto &status : player_ship_health) {
+    std::print("{}: Number of hits: {}{}{}/{}", shipdef_to_name(status.id),
+               colors::red, status.number_hits, colors::reset, status.id.size);
+    if (status.sunk)
+      std::print("  {}SUNK{}", colors::red, colors::reset);
+    std::print("\n");
+  }
+
+  while (1) {
+    std::print("Enter your next guess: {}", colors::green);
+    std::string user_input;
+    std::cin >> user_input;
+
+    if (user_input == "quit")
+      std::terminate();
+
+    if (auto rc_opt = RowCol::from_string_opt(user_input); rc_opt) {
+      if (!layout.is_row_col_valid(rc_opt.value())) {
+        std::println("Invalid value entered");
+        continue;
+      }
+
+      if (!p.fire_single_shot(rc_opt.value())) {
+        std::println("Shot invalid per game.");
+        continue;
+
+      } else
+        return;
+
+    } else {
+      std::println("Unable to recognize the value entered. Please try again.");
+      continue;
+    }
+  }
+}
+
 void play(const GameLayout &layout, Ship::Ships &&playerShips,
           Ship::Ships &&aiShips, std::unique_ptr<AI> ai) {
   const auto HUMAN_ID = UserID(1);
@@ -427,7 +516,7 @@ void play(const GameLayout &layout, Ship::Ships &&playerShips,
   while (server.next_round()) {
     auto player = server.get_current_player();
     if (player.user_id() == HUMAN_ID) {
-      player.fire_single_shot(RowCol(Row(0), Col(0)));
+      human_play(player, layout);
     }
     if (player.user_id() == AI_ID) {
       auto guess = ai->guess();
@@ -453,6 +542,15 @@ void play(const GameLayout &layout, Ship::Ships &&playerShips,
       }
     }
   }
+  std::println("Game over!!");
+  if (auto winner_opt = server.winner(); winner_opt) {
+    if (winner_opt.value().user_id() == HUMAN_ID)
+      std::println("You WON! Nice job.");
+    else
+      std::println("You LOST that sucks. Try again...");
+
+  } else
+    std::println("The game cannot figure out who won!");
 }
 
 void begin_game() {
