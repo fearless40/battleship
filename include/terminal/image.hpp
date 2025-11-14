@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 #include <type_traits>
 
 namespace term {
@@ -53,8 +54,9 @@ struct alignas(1) QuadrantBlock {
 };
 
 namespace details {
-template <class... Components>
-struct alignas(8) Pixel_ : public Components... {};
+template <class... Components> struct alignas(8) Pixel_ : public Components... {
+  using components = std::tuple<Components...>;
+};
 } // namespace details
 
 using Pixel_ASCII = details::Pixel_<Color, BgColor, ASCII>;
@@ -75,7 +77,7 @@ public:
   using is_ascii = std::is_base_of<ASCII, PixelFormat>;
   using is_utf8 = std::is_base_of<UTF8, PixelFormat>;
   using is_bgcolor = std::is_base_of<BgColor, PixelFormat>;
-  using is_color = std::is_base_of<Color, PixelFormat>;
+  static constexpr auto is_color = std::is_base_of_v<Color, PixelFormat>;
   using is_termstyle = std::is_base_of<FormatFlags, PixelFormat>;
 
   Image(unsigned int width, unsigned int height)
