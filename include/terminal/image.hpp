@@ -54,13 +54,24 @@ struct alignas(1) QuadrantBlock {
 };
 
 namespace details {
-template <class... Components> struct alignas(8) Pixel_ : public Components... {
+template <class... Components> struct alignas(4) Pixel_ : public Components... {
   using components = std::tuple<Components...>;
+  using type = Pixel_<Components...>;
 };
+
 } // namespace details
 
 using Pixel_ASCII = details::Pixel_<Color, BgColor, ASCII>;
 using Pixel_Full = details::Pixel_<FormatFlags, Color, BgColor, ASCII>;
+
+template <typename PixelType> struct PixelFormatDetails {
+  static constexpr auto is_ascii = std::is_base_of_v<ASCII, PixelType>;
+  static constexpr auto is_utf8 = std::is_base_of_v<UTF8, PixelType>;
+  static constexpr auto is_bgcolor = std::is_base_of_v<BgColor, PixelType>;
+  static constexpr auto is_color = std::is_base_of_v<Color, PixelType>;
+  static constexpr auto is_termstyle =
+      std::is_base_of_v<FormatFlags, PixelType>;
+};
 
 template <class PixelFormat> class Image {
 private:
@@ -72,20 +83,26 @@ private:
     return &buffer[x * height_ + y];
   }
 
-public:
-  using type = PixelFormat;
-  using is_ascii = std::is_base_of<ASCII, PixelFormat>;
-  using is_utf8 = std::is_base_of<UTF8, PixelFormat>;
-  using is_bgcolor = std::is_base_of<BgColor, PixelFormat>;
-  static constexpr auto is_color = std::is_base_of_v<Color, PixelFormat>;
-  using is_termstyle = std::is_base_of<FormatFlags, PixelFormat>;
+  constexpr const PixelFormat *pixel_at(unsigned int x, unsigned int y) const {
+    return &buffer[x * height_ + y];
+  }
 
+public:
+  using PXFormat = PixelFormat;
   Image(unsigned int width, unsigned int height)
       : width_(width), height_(height),
         buffer(new PixelFormat[width_ * height_]) {};
 
+  constexpr unsigned int width() const noexcept { return width_; }
+  constexpr unsigned int height() const noexcept { return height_; }
+
   constexpr void set_pixel(unsigned int x, unsigned int y, PixelFormat &p) {
     *pixel_at(x, y) = p;
+  }
+
+  constexpr const PixelFormat &pixel(unsigned int x,
+                                     unsigned int y) const noexcept {
+    return *pixel_at(x, y);
   }
 };
 

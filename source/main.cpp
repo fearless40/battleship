@@ -7,23 +7,26 @@ void begin_game();
 
 int main(int argv, char *argc[]) {
 
-  using ColorOnly = term::details::Pixel_<term::Color>;
-  ColorOnly pixels[10];
+  using ColorOnly = term::details::Pixel_<term::Color, term::ASCII>;
+  term::Image<ColorOnly> picture(10, 10);
 
-  for (unsigned char i = 0; i < 10; ++i) {
-    if (i > 5) {
-      pixels[i].red = 255 - i * 10;
-      pixels[i].green = 100 + i * 10;
-      pixels[i].blue = 20 * i;
-    } else {
-      pixels[i].red = 100;
-      pixels[i].green = 100;
-      pixels[i].blue = 100;
+  for (unsigned int x = 0; x < picture.width(); ++x) {
+    for (unsigned int y = 0; y < picture.height(); ++y) {
+      ColorOnly p;
+      p.red = y * 10;
+      p.green = x * 10;
+      p.blue = x * y;
+      p.value = 'a' + x;
+
+      picture.set_pixel(x, y, p);
     }
-    // pixels[i].value = 67 + i;
-  };
+  }
 
-  term::details::render(pixels);
+  unsigned char buffer[4096];
+
+  term::details::render_to_buffer(picture, buffer);
+
+  std::cout << buffer;
 
   // std::cout << "Hello from the battleship program!\n";
   // std::cout << "Version: " << Version::MAJOR_VERSION << "."
