@@ -1,12 +1,14 @@
 // #include "version.hpp"
 #include "terminal/image.hpp"
 #include "terminal/render.hpp"
+#include "terminal/term_control.hpp"
 #include <iostream>
 
 void begin_game();
 
 int main(int argv, char *argc[]) {
 
+  term::TermControl tc{};
   using ColorOnly = term::details::Pixel_<term::Color, term::ASCII>;
   term::Image<ColorOnly> picture(10, 10);
 
@@ -26,7 +28,9 @@ int main(int argv, char *argc[]) {
 
   term::details::render_to_buffer(picture, buffer);
 
-  std::cout << buffer;
+  std::cout << buffer; //<< std::endl;
+
+  sleep(1);
 
   // std::cout << "Hello from the battleship program!\n";
   // std::cout << "Version: " << Version::MAJOR_VERSION << "."

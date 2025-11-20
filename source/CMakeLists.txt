@@ -12,12 +12,13 @@ target_include_directories(
 )
 
 add_library( terminal 
-   INTERFACE   
+   STATIC
+   terminal/term_control.cpp
 )
 
 target_include_directories(
    terminal
-   INTERFACE
+   PUBLIC
    "${ROOT_DIR}/include/terminal"
 )
 
@@ -73,6 +74,7 @@ target_link_libraries(
    gameserver
    util
    AIBasic
+   terminal
 )
 
 target_include_directories ( 
@@ -82,6 +84,7 @@ target_include_directories (
    # For auto generated files from CMAKE
    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/include" 
 )
+
 
 
 
