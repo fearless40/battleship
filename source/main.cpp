@@ -30,7 +30,11 @@ int main(int argv, char *argc[]) {
 
   std::cout << buffer; //<< std::endl;
 
-  sleep(1);
+  while (1) {
+    tc.on_loop();
+
+    // sleep(1);
+  }
 
   // std::cout << "Hello from the battleship program!\n";
   // std::cout << "Version: " << Version::MAJOR_VERSION << "."

@@ -1,14 +1,33 @@
 #include "term_control.hpp"
+#include <cctype>
+#include <charconv>
+#include <cstddef>
 #include <cstdio>
 #include <exception>
 #include <iostream>
+#include <poll.h>
 #include <termios.h>
 #include <unistd.h>
 
 namespace term {
 
+namespace codes {
 static constexpr char ALTSCREEN_ON[] = "\e[?1049h";
 static constexpr char ALTSCREEN_OFF[] = "\e[?1049h";
+static constexpr char CSI[] = "\x9B";
+static constexpr char DCS[] = "\x90";
+static constexpr char OSC[] = "\x9D";
+
+#define CSI "\e["
+
+static constexpr char KITTYKEY_CODE_PROTOCOL_ON[] = CSI ">1u";
+static constexpr char KITTYKEY_CODE_PROTOCOL_OFF[] = CSI "<u";
+static constexpr char KITTYKEY_ENHACEMENT[] =
+    CSI "=11u"; // Disambiguate escape codes, report event types, report all
+                // keys as escape codes
+
+#undef CSI
+} // namespace codes
 
 TermControl::TermControl() {
   // Unbuffer ouput for C++ streams
@@ -28,7 +47,18 @@ TermControl::TermControl() {
 
 TermControl::~TermControl() {
 
-  std::cout << (ALTSCREEN_OFF);
+  // Turn off alternative screen;
+  reset_term();
+
+  std::ios_base::sync_with_stdio(true);
+  // std::cout.tie(&std::cin);
+  // std::cout << std::unitbuf;
+}
+
+void TermControl::reset_term() {
+
+  std::cout << codes::KITTYKEY_CODE_PROTOCOL_OFF;
+  std::cout << (codes::ALTSCREEN_OFF);
   tcsetattr(STDIN_FILENO, TCSANOW, &tp_old_);
 }
 
@@ -68,12 +98,71 @@ void TermControl::init_term() {
 
   tcsetattr(STDIN_FILENO, TCSANOW, &tp);
 
-  // Send signals to terminal that we want alternate mode rendering
-  //
-  //
-  //
-  // Enable alternate window rendering to overwrite users term
-  std::cout << (ALTSCREEN_ON);
+  // Enable alternate window rendering
+  std::cout << (codes::ALTSCREEN_ON);
+
+  // Set Kitty text processing
+  // clang-format off
+   std::cout
+      << codes::KITTYKEY_CODE_PROTOCOL_ON 
+      << codes::KITTYKEY_ENHACEMENT;
+
+  // clang-format on
 }
+
+void TermControl::on_loop() {
+  pollfd pdata;
+
+  pdata.fd = STDIN_FILENO;
+  pdata.events = POLLIN;
+
+  if (auto ret = poll(&pdata, 1, 0); ret == -1) {
+    // Some error occurded terminate!
+    std::cout << "Error: " << ret;
+    std::terminate();
+  }
+
+  if (pdata.revents & POLLIN) {
+    // Read the data from stdin
+    char buff[128];
+    auto amount = read(STDIN_FILENO, buff, 128);
+    if (amount <= 0)
+      return;
+
+    if (buff[0] == '\e' && buff[1] == '[') {
+      int index = 1;
+      std::string output;
+      while (isdigit(buff[++index])) {
+      };
+      if (index >= 2) {
+        int value = 0;
+        std::from_chars(&buff[2], &buff[index], value);
+        if (buff[index] == ';') {
+          // Need to write a real parse to parse key codes using this format too
+          // hard to do it lazy style.
+               && buff[index + 1] == '1' &&
+            buff[index + 2] == ':') {
+                 output = "Pressing: " + std::to_string(value) + " : ";
+                 switch (buff[index + 3]) {
+                 case '1':
+                   output + "press";
+                   break;
+                 case '2':
+                   output + "repeat";
+                   break;
+                 case '3':
+                   output + "release";
+                   break;
+                 default:
+                   output + "uhoh";
+                 }
+                 std::cout << output;
+               }
+        }
+
+        // std::cout << std::string_view(buff, amount);
+      }
+    }
+  }
 
 }; // namespace term
