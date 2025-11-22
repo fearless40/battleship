@@ -13,6 +13,7 @@ target_include_directories(
 
 add_library( terminal 
    STATIC
+   terminal/keyparser.cpp
    terminal/term_control.cpp
 )
 
