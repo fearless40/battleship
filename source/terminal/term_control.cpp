@@ -1,4 +1,5 @@
 #include "term_control.hpp"
+#include "keyparser.hpp"
 #include <cctype>
 #include <charconv>
 #include <cstddef>
@@ -6,6 +7,7 @@
 #include <exception>
 #include <iostream>
 #include <poll.h>
+#include <print>
 #include <termios.h>
 #include <unistd.h>
 
@@ -74,7 +76,9 @@ void TermControl::init_term() {
   tp.c_iflag &= ~IGNBRK; // Disable ignoring break condition
   tp.c_iflag &= ~BRKINT; // Disable break causing input and output to be
                          // flushed
-  tp.c_iflag &= ~PARMRK; // Disable marking parity errors.
+  tp.c_iflag &= ~PARMRK; // Disable marking parity errorsCSI
+                         // unicode-key-code:alternate-key-codes ;
+                         // modifiers:event-type ; text-as-codepoints u.
   tp.c_iflag &= ~ISTRIP; // Disable striping 8th bit off characters.
   tp.c_iflag &= ~INLCR;  // Disable mapping NL to CR.
   tp.c_iflag &= ~IGNCR;  // Disable ignoring CR.
@@ -129,40 +133,12 @@ void TermControl::on_loop() {
     if (amount <= 0)
       return;
 
-    if (buff[0] == '\e' && buff[1] == '[') {
-      int index = 1;
-      std::string output;
-      while (isdigit(buff[++index])) {
-      };
-      if (index >= 2) {
-        int value = 0;
-        std::from_chars(&buff[2], &buff[index], value);
-        if (buff[index] == ';') {
-          // Need to write a real parse to parse key codes using this format too
-          // hard to do it lazy style.
-               && buff[index + 1] == '1' &&
-            buff[index + 2] == ':') {
-                 output = "Pressing: " + std::to_string(value) + " : ";
-                 switch (buff[index + 3]) {
-                 case '1':
-                   output + "press";
-                   break;
-                 case '2':
-                   output + "repeat";
-                   break;
-                 case '3':
-                   output + "release";
-                   break;
-                 default:
-                   output + "uhoh";
-                 }
-                 std::cout << output;
-               }
-        }
-
-        // std::cout << std::string_view(buff, amount);
-      }
-    }
+    auto key = kittykeyprotocol::parse(std::string_view(buff, amount));
+    std::println("Key {} Shift {} Ctrl {} Alt {} Pressed {} Released {}",
+                 key.key, (bool)key.shift, (bool)key.ctl, (bool)key.alt,
+                 key.position == kittykeyprotocol::KeyPosition::pressed,
+                 key.position == kittykeyprotocol::KeyPosition::released);
   }
+}
 
 }; // namespace term
