@@ -2,10 +2,9 @@
 #include <cctype>
 #include <charconv>
 #include <cstring>
-#include <iostream>
 #include <string_view>
 
-namespace term::kittykeyprotocol {
+namespace term::input {
 
 template <typename Iterator, typename Sentinal>
 int digits(Iterator &it, const Sentinal S) {
@@ -28,7 +27,7 @@ void next_match(char letter, Iterator &start, const Sentinal S) {
   }
 }
 
-KeyStatus parse(const std::string_view buffer) noexcept {
+KeyStatus parse_key(const std::string_view buffer) noexcept {
 
   // Key protocol looks like
   // CSI unicode-key-code:alternate-key-codes ; modifiers:event-type ;
@@ -49,7 +48,6 @@ KeyStatus parse(const std::string_view buffer) noexcept {
     return k;
 
   ++start;
-  std::cout << std::string_view(start, buffer.end()) << '\n';
 
   k.key = digits(start, buffer.end());
 
@@ -93,4 +91,39 @@ KeyStatus parse(const std::string_view buffer) noexcept {
 
   return k;
 }
-} // namespace term::kittykeyprotocol
+
+MouseStatus parse_mouse(const std::string_view buffer) noexcept {
+
+  MouseStatus ms;
+  std::memset(&ms, 0, sizeof(MouseStatus));
+
+  auto start = buffer.begin();
+  if (*start != '\e')
+    return ms;
+  if (*++start != '[')
+    return ms;
+  if (*++start != '<')
+    return ms;
+
+  auto btn = digits(++start, buffer.end());
+  if (*start != ';')
+    return ms;
+  auto row = digits(++start, buffer.end());
+  if (*start != ';')
+    return ms;
+  auto col = digits(++start, buffer.end());
+  char state = *start;
+
+  ms.button = static_cast<MouseStatus::Button>(btn & 0b11000011);
+  ms.row = row - 1;
+  ms.col = col - 1;
+  ms.press = state == 'M';
+  ms.release = state == 'm';
+  ms.shift = btn & 0b100;
+  ms.alt = btn & 0b1000;
+  ms.ctrl = btn & 0b10000;
+
+  return ms;
+}
+
+} // namespace term::input

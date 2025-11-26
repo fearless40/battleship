@@ -5,9 +5,11 @@
 #include <cstddef>
 #include <cstdio>
 #include <exception>
+#include <ios>
 #include <iostream>
 #include <poll.h>
 #include <print>
+#include <string_view>
 #include <termios.h>
 #include <unistd.h>
 
@@ -15,7 +17,7 @@ namespace term {
 
 namespace codes {
 static constexpr char ALTSCREEN_ON[] = "\e[?1049h";
-static constexpr char ALTSCREEN_OFF[] = "\e[?1049h";
+static constexpr char ALTSCREEN_OFF[] = "\e[?1049l";
 static constexpr char CSI[] = "\x9B";
 static constexpr char DCS[] = "\x90";
 static constexpr char OSC[] = "\x9D";
@@ -27,7 +29,10 @@ static constexpr char KITTYKEY_CODE_PROTOCOL_OFF[] = CSI "<u";
 static constexpr char KITTYKEY_ENHACEMENT[] =
     CSI "=11u"; // Disambiguate escape codes, report event types, report all
                 // keys as escape codes
-
+static constexpr char VT200_MOUSE_ON[] = CSI "?1000h";
+static constexpr char MOUSE_BUTTON_ALL_EVENTS_ON[] = CSI "?1002h";
+static constexpr char MOUSE_MOVEMENT_EVENTS_ON[] = CSI "?1003h";
+static constexpr char SGR_MOUSE_ON[] = CSI "?1006h";
 #undef CSI
 } // namespace codes
 
@@ -35,7 +40,9 @@ TermControl::TermControl() {
   // Unbuffer ouput for C++ streams
   std::ios_base::sync_with_stdio(false);
   std::cout.tie(nullptr);
-  std::cout << std::unitbuf;
+  std::unitbuf(std::cout);
+  std::cin.tie(nullptr);
+  std::unitbuf(std::cin);
 
   // Without unitbuf the cout will not write without a flush command.
   // Not sure if better to auto flush or just force flush.
@@ -108,8 +115,12 @@ void TermControl::init_term() {
   // Set Kitty text processing
   // clang-format off
    std::cout
-      << codes::KITTYKEY_CODE_PROTOCOL_ON 
-      << codes::KITTYKEY_ENHACEMENT;
+      << codes::KITTYKEY_CODE_PROTOCOL_ON
+      << codes::KITTYKEY_ENHACEMENT
+      << codes::VT200_MOUSE_ON
+      << codes::MOUSE_BUTTON_ALL_EVENTS_ON
+      << codes::MOUSE_MOVEMENT_EVENTS_ON
+      << codes::SGR_MOUSE_ON;
 
   // clang-format on
 }
@@ -133,11 +144,19 @@ void TermControl::on_loop() {
     if (amount <= 0)
       return;
 
-    auto key = kittykeyprotocol::parse(std::string_view(buff, amount));
-    std::println("Key {} Shift {} Ctrl {} Alt {} Pressed {} Released {}",
-                 key.key, (bool)key.shift, (bool)key.ctl, (bool)key.alt,
-                 key.position == kittykeyprotocol::KeyPosition::pressed,
-                 key.position == kittykeyprotocol::KeyPosition::released);
+    const std::string_view buffer_view(buff, amount);
+    std::cout << buffer_view << '\n';
+    if (input::is_mouse_protocol(buffer_view)) {
+      auto ms = input::parse_mouse(buffer_view);
+      // std::println("Mouse {}:{} Button {} ", ms.row, ms.col, (int)ms.button);
+
+    } else {
+      auto key = input::parse_key(buffer_view);
+      // std::println("Key {} Shift {} Ctrl {} Alt {} Pressed {} Released {}",
+      //              key.key, (bool)key.shift, (bool)key.ctl, (bool)key.alt,
+      //              key.position == input::KeyPosition::pressed,
+      //              key.position == input::KeyPosition::released);
+    }
   }
 }
 
