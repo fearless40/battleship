@@ -1,15 +1,13 @@
 #include "term_control.hpp"
 #include "keyparser.hpp"
-#include <cctype>
-#include <charconv>
-#include <cstddef>
-#include <cstdio>
+#include <atomic>
+#include <csignal>
 #include <exception>
 #include <ios>
 #include <iostream>
 #include <poll.h>
-#include <print>
 #include <string_view>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -53,6 +51,21 @@ TermControl::TermControl() {
 
   init_term();
 }
+
+namespace {
+
+std::atomic<int> sig_screen_size_changed;
+
+void signal_handler(int sig) {
+
+  switch (sig) {
+  case SIGWINCH:
+    sig_screen_size_changed.fetch_add(1, std::memory_order_relaxed);
+    break;
+  }
+}
+
+} // namespace
 
 TermControl::~TermControl() {
 
@@ -123,13 +136,42 @@ void TermControl::init_term() {
       << codes::SGR_MOUSE_ON;
 
   // clang-format on
+
+  get_width_height();
+}
+
+void TermControl::install_signals() { std::signal(SIGWINCH, signal_handler); };
+
+void TermControl::uninstall_signals() { std::signal(SIGWINCH, SIG_DFL); }
+
+void TermControl::get_width_height() {
+  struct winsize sz;
+  ioctl(STDIN_FILENO, TIOCGWINSZ, &sz);
+  width_ = sz.ws_col;
+  height_ = sz.ws_row;
+  px_width_ = sz.ws_xpixel;
+  px_height_ = sz.ws_ypixel;
 }
 
 void TermControl::on_loop() {
+
+  // Check for any signal events
+  if (auto value = sig_screen_size_changed.load(std::memory_order_relaxed);
+      value > 0) {
+    get_width_height();
+    window_resized_ = true;
+    sig_screen_size_changed.store(0, std::memory_order_relaxed);
+  } else {
+    window_resized_ = false;
+  }
+
   pollfd pdata;
 
   pdata.fd = STDIN_FILENO;
   pdata.events = POLLIN;
+
+  mouse_changed_ = false;
+  key_changed_ = false;
 
   if (auto ret = poll(&pdata, 1, 0); ret == -1) {
     // Some error occurded terminate!
@@ -145,13 +187,15 @@ void TermControl::on_loop() {
       return;
 
     const std::string_view buffer_view(buff, amount);
-    std::cout << buffer_view << '\n';
+    // std::cout << buffer_view << '\n';
     if (input::is_mouse_protocol(buffer_view)) {
-      auto ms = input::parse_mouse(buffer_view);
+      mouse_changed_ = true;
+      mouseevt_ = input::parse_mouse(buffer_view);
       // std::println("Mouse {}:{} Button {} ", ms.row, ms.col, (int)ms.button);
 
     } else {
-      auto key = input::parse_key(buffer_view);
+      key_changed_ = true;
+      keyevt_ = input::parse_key(buffer_view);
       // std::println("Key {} Shift {} Ctrl {} Alt {} Pressed {} Released {}",
       //              key.key, (bool)key.shift, (bool)key.ctl, (bool)key.alt,
       //              key.position == input::KeyPosition::pressed,
@@ -159,5 +203,4 @@ void TermControl::on_loop() {
     }
   }
 }
-
 }; // namespace term

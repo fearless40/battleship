@@ -1,9 +1,7 @@
 #pragma once
 
 #include "image.hpp"
-#include <charconv>
-#include <iostream>
-#include <print>
+#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -12,7 +10,7 @@ namespace term {
 namespace details {
 
 template <class PXFormat>
-  requires std::is_base_of_v<Color, PXFormat>
+  requires std::is_base_of_v<pixel::Color, PXFormat>
 unsigned int extract_color(PXFormat &px) {
   unsigned int c = 0;
   c |= px.red << 16;
@@ -30,11 +28,11 @@ template <class PXFormat> unsigned int extract_bgcolor(PXFormat *px) {
 
 template <class T> struct WhatToCache {};
 
-template <> struct WhatToCache<Color> {
+template <> struct WhatToCache<pixel::Color> {
   unsigned int prev_color{0};
 };
 
-template <> struct WhatToCache<BgColor> {
+template <> struct WhatToCache<pixel::BgColor> {
   unsigned int prev_backgroun{0};
 };
 
@@ -89,6 +87,25 @@ constexpr CPtr move_left_relative(CPtr begin, int amount = 1) {
   return relative(begin, amount, 'D');
 }
 
+using OutputBuffer = std::span<unsigned char>;
+
+constexpr void write_color(typename OutputBuffer::iterator &out, int color) {
+  *out = '\e';
+  *++out = '[';
+  *++out = '3';
+  *++out = '8';
+  *++out = ';';
+  *++out = '2';
+  *++out = ';';
+  out = to_chars(++out, (color >> 16) & 0xFF);
+  *out = ';';
+  out = to_chars(++out, (color >> 8) & 0xFF);
+  *out = ';';
+  out = to_chars(++out, color & 0xFF);
+  *out = 'm';
+  ++out;
+}
+
 template <class PXFormat>
 void render_to_buffer(const Image<PXFormat> &img,
                       std::span<unsigned char> buffer) {
@@ -104,30 +121,15 @@ void render_to_buffer(const Image<PXFormat> &img,
     for (unsigned int y = 0; y < img.height(); ++y) {
       auto &p = img.pixel(x, y);
 
-      if constexpr (PixelFormatDetails<PXFormat>::is_color) {
+      if constexpr (pixel::PixelFormatDetails<PXFormat>::is_color) {
         unsigned int curr = extract_color(p);
         if (cache.prev_color != curr) {
-          *out = '\e';
-          *++out = '[';
-          *++out = '3';
-          *++out = '8';
-          *++out = ';';
-          *++out = '2';
-          *++out = ';';
-          out = to_chars(++out, (curr >> 16) & 0xFF);
-          *out = ';';
-          out = to_chars(++out, (curr >> 8) & 0xFF);
-          *out = ';';
-          out = to_chars(++out, curr & 0xFF);
-          *out = 'm';
-          ++out;
-          // std::print("\e[38;2;{};{};{}mx", curr >> 16 & 0xFF, curr >> 8 &
-          // 0xFF, curr & 0xFF);
+          write_color(out, curr);
           cache.prev_color = curr;
         }
       }
 
-      if constexpr (PixelFormatDetails<PXFormat>::is_ascii) {
+      if constexpr (pixel::PixelFormatDetails<PXFormat>::is_ascii) {
         *out = p.value;
         ++out;
       }
