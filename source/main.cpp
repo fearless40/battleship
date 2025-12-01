@@ -1,5 +1,6 @@
 // #include "version.hpp"
 #include "soa.hpp"
+#include "soamemorylayout.hpp"
 #include "terminal/image.hpp"
 #include "terminal/render.hpp"
 #include "terminal/term_control.hpp"
@@ -10,14 +11,26 @@ void begin_game();
 int main(int argv, char *argc[]) {
 
   // util::soa::SOA<util::soa::DynamicArray, char, int> soa;
-  util::soa::SOA<util::soa::FixedArray<100>, char, int> soa;
+  {
+    util::soa::SOA<util::soa::memory_layout::FixedArray<100>, char, int> soa;
 
-  soa.push_back('a', 1);
-  soa.push_back('b', 2);
-  soa.push_back('c', 3);
-  soa.push_back('d', 4);
+    soa.push_back('a', 1);
+    soa.push_back('b', 2);
+    soa.push_back('c', 3);
+    soa.push_back('d', 4);
 
-  std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
+    std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
+  }
+  {
+    util::soa::SOA<util::soa::memory_layout::DynamicArray, char, int> soa;
+
+    soa.push_back('a', 1);
+    soa.push_back('b', 2);
+    soa.push_back('c', 3);
+    soa.push_back('d', 4);
+
+    std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
+  }
   //
   // term::TermControl tc{};
   // using ColorOnly = term::details::Pixel_<term::Color, term::ASCII>;
