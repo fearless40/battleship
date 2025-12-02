@@ -4,6 +4,8 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <functional>
+#include <print>
 #include <span>
 #include <stdexcept>
 #include <tuple>
@@ -13,7 +15,7 @@ namespace util::soa {
 
 namespace detail {
 struct DynamicCapacity {
-  std::size_t mCapacity;
+  std::size_t mCapacity{0};
   constexpr auto capacity() { return mCapacity; }
 
   constexpr void set_capacity(std::size_t amount) { mCapacity = amount; }
@@ -50,6 +52,9 @@ public:
   template <typename T>
   using array_storage_t = typename protocol_t::template value_t<T>;
 
+  template <typename T>
+  using array_reference_t = typename protocol_t::template reference_t<T>;
+
   using index_t = std::size_t;
 
   using detail::Capacity<protocol_t>::capacity;
@@ -60,9 +65,13 @@ private:
   storage_t mArrays{};
 
   template <typename structure_t>
-  constexpr array_storage_t<structure_t> &get_array() {
+  constexpr array_reference_t<structure_t> get_array() {
     return std::get<array_storage_t<structure_t>>(mArrays);
   }
+
+  template <typename T>
+  using arg_ref = std::conditional<sizeof(T) < sizeof(void *), T,
+                                   std::add_lvalue_reference_t<T>>;
 
 public:
   class Iterator {
@@ -155,16 +164,23 @@ public:
       // Then Allocate
 
       if constexpr (!protocol_t::is_fixed_capacity) {
-        (protocol_t::allocate(get_array<structures_t>(), capacity(),
-                              capacity() * 3),
+        std::println("Allocating...");
+        auto new_cap = capacity() * 3 / 2 + 128;
+        std::println("Old Cap: {}, New Cap {}, Size: {}", capacity(), new_cap,
+                     size());
+        (protocol_t::template allocate<structures_t>(get_array<structures_t>(),
+                                                     capacity(), new_cap),
          ...);
-        this->set_capacity(capacity() * 3);
+        this->set_capacity(new_cap);
       } else {
-        throw new std::invalid_argument("Error not a allocating type in SOA.");
+        throw new std::invalid_argument(
+            "Error not a allocating memory protocol in SOA.");
       }
     }
 
-    (protocol_t::set(get_array<structures_t>(), mSize, items), ...);
+    (protocol_t::template set<structures_t>(get_array<structures_t>(), mSize,
+                                            items),
+     ...);
     ++mSize;
   }
 

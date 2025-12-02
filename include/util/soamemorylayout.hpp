@@ -14,10 +14,11 @@ struct DynamicArray {
   using index_t = std::size_t;
 
   // Array types
-  template <typename T> using value_t = std::add_pointer_t<std::decay<T>>;
+  template <typename T> using value_t = std::add_pointer_t<T>;
 
   template <typename data_t>
-  using reference_t = std::add_lvalue_reference_t<data_t>;
+  using reference_t = std::add_pointer_t<
+      value_t<data_t>>; // std::add_lvalue_reference_t<data_t>;
 
   template <typename data_t> using pointer_t = value_t<data_t>;
 
@@ -39,18 +40,18 @@ struct DynamicArray {
   // Functions for working with a single array
 
   template <typename data_t>
-  static value_t<data_t> allocate(value_t<data_t> old, std::size_t oldsz,
-                                  std::size_t newsz) {
+  static void allocate(reference_t<data_t> old, std::size_t oldsz,
+                       std::size_t newsz) {
     if constexpr (std::is_trivially_copyable_v<data_t>) {
       value_t<data_t> new_array = new data_t[newsz];
-      std::memcpy(old, new_array, oldsz);
-      return new_array;
+      std::memcpy(*old, new_array, oldsz);
+      *old = new_array;
     } else {
 
       value_t<data_t> new_array = new data_t[newsz];
       for (std::size_t index = 0; index < oldsz; ++index)
         new_array[index] = std::move(old[index]);
-      return new_array;
+      *old = new_array;
     }
   }
   template <typename data_t>
@@ -79,7 +80,7 @@ struct DynamicArray {
 
   template <typename data_t>
   // requires ( data_t.operator [] )
-  static constexpr void set(data_t *array, index_t index,
+  static constexpr void set(reference_t<data_t> array, index_t index,
                             const data_t &item_value) {
     array[index] = item_value;
   }
@@ -152,8 +153,8 @@ template <unsigned int MAX_CAPACITY> struct FixedArray {
 
   template <typename data_t>
   // requires ( data_t.operator [] )
-  static constexpr void set(data_t &array, index_t index,
-                            const data_t::value_type &item_value) {
+  static constexpr void set(reference_t<data_t> array, index_t index,
+                            const data_t &item_value) {
     array[index] = item_value;
   }
 
