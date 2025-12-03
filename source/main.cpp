@@ -29,6 +29,10 @@ int main(int argv, char *argc[]) {
     soa.push_back('c', 3);
     soa.push_back('d', 4);
 
+    for (int i = 1; i < 250; ++i) {
+      soa.push_back('a', i);
+    }
+
     std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
   }
   //

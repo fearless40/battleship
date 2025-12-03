@@ -64,8 +64,7 @@ private:
   index_t mSize{0};
   storage_t mArrays{};
 
-  template <typename structure_t>
-  constexpr array_reference_t<structure_t> get_array() {
+  template <typename structure_t> constexpr auto &get_array() {
     return std::get<array_storage_t<structure_t>>(mArrays);
   }
 

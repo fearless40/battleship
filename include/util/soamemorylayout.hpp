@@ -16,9 +16,8 @@ struct DynamicArray {
   // Array types
   template <typename T> using value_t = std::add_pointer_t<T>;
 
-  template <typename data_t>
-  using reference_t = std::add_pointer_t<
-      value_t<data_t>>; // std::add_lvalue_reference_t<data_t>;
+  template <typename T>
+  using reference_t = value_t<T>; // std::add_lvalue_reference_t<data_t>;
 
   template <typename data_t> using pointer_t = value_t<data_t>;
 
@@ -40,18 +39,21 @@ struct DynamicArray {
   // Functions for working with a single array
 
   template <typename data_t>
-  static void allocate(reference_t<data_t> old, std::size_t oldsz,
+  static void allocate(reference_t<data_t> &old, std::size_t oldsz,
                        std::size_t newsz) {
     if constexpr (std::is_trivially_copyable_v<data_t>) {
       value_t<data_t> new_array = new data_t[newsz];
-      std::memcpy(*old, new_array, oldsz);
-      *old = new_array;
+      std::memcpy(old, new_array, oldsz);
+      delete[] old;
+      old = new_array;
     } else {
 
       value_t<data_t> new_array = new data_t[newsz];
       for (std::size_t index = 0; index < oldsz; ++index)
         new_array[index] = std::move(old[index]);
-      *old = new_array;
+
+      delete[] old;
+      old = new_array;
     }
   }
   template <typename data_t>
