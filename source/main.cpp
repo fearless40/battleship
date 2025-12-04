@@ -33,6 +33,8 @@ int main(int argv, char *argc[]) {
       soa.push_back('a', i);
     }
 
+    soa.remove(soa.end() - 1);
+
     std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
   }
   //

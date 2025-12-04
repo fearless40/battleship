@@ -1,7 +1,10 @@
 #pragma once
 
+#include "soa.hpp"
+#include "soamemoryprotocol.hpp"
 #include <compare>
 #include <vector>
+
 namespace term {
 
 class Compositor {
@@ -44,13 +47,18 @@ private:
     struct X {};
     struct Y {};
 
+    using XPos = Range1D<X>;
+    using YPos = Range1D<Y>;
+    using ZOrder = int;
+
     bool composition_dirty_{false};
     std::vector<Handle> dirty_layers_;
     std::vector<Handle> visible_layers_;
     std::vector<Handle> free_layers_;
-    std::vector<Range1D<X>> x_pos_;
-    std::vector<Range1D<Y>> y_pos_;
-    std::vector<int> z_order_;
+
+    using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos,
+                               YPos, ZOrder, Handle>;
+    SOA soa;
 
   public:
     Handle get_base_layer() const { return {}; };
