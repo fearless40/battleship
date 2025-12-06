@@ -23,6 +23,11 @@ target_include_directories(
    "${ROOT_DIR}/include/terminal"
 )
 
+target_link_libraries( terminal
+   PUBLIC
+   util
+)
+
 
 add_library(
    gameserver 

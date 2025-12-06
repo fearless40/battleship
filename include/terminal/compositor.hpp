@@ -1,7 +1,7 @@
 #pragma once
 
 #include "soa.hpp"
-#include "soamemoryprotocol.hpp"
+#include "soamemorylayout.hpp"
 #include <compare>
 #include <vector>
 
@@ -52,24 +52,104 @@ private:
     using ZOrder = int;
 
     bool composition_dirty_{false};
+
+    // These vectors are packed (no holes)
     std::vector<Handle> dirty_layers_;
     std::vector<Handle> visible_layers_;
-    std::vector<Handle> free_layers_;
 
     using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos,
                                YPos, ZOrder, Handle>;
     SOA soa;
 
   public:
-    Handle get_base_layer() const { return {}; };
-    Handle new_layer(Rect position, int zOrder);
-    void layer_dirty(Handle layer);
-    void layer_is_transperant(Handle layer);
-    void layer_is_opaque(Handle layer);
-    void hide(Handle layer);
-    void show(Handle layer);
-    void move(Handle layer, const Rect &position);
-    void move(Handle layer, int zOrder);
-    void move(Handle layer, const Rect &position, int zOrder);
-  };
-} // namespace term
+    friend class ScanLineIterator;
+    class ScanLineIterator {
+      SOA &soa;
+      int max_x_;
+      int max_y_;
+      int x_;
+      int y_;
+      std::vector<SOA::Iterator> current_line;
+
+      // Returns the image and number of pixles it represents
+      std::pair<Handle, int> operator*() {
+        if (x_ > max_x_) {
+          // Reset cache and advance a line
+          ++y_;
+          current_line.clear();
+
+          // Scan for onle the items in the current line
+          for (auto it = soa.begin(); it != soa.end(); ++it) {
+            if (it.template get<YPos>().contains(y())) {
+              current_line.push_back(it);
+            };
+          }
+
+          // Now sort the line
+          std::sort(current_line.begin(), current_line.end(),
+                    [](auto &l, auto &r) { return l.x < r.x; });
+        }
+
+        auto what_to_render = current_line.begin();
+        // Find the first one that contains x()
+        for (auto &it : current_line) {
+          if (it->get<XPos>().contains(x_)) {
+            what_to_render = what_to_render.get<ZOrder>() < it.get<ZOrder>()
+                                 ? it
+                                 : what_to_render;
+          }
+        }
+
+        int last_x = 0;
+        // Find the end of the current image
+        for (auto next_item = what_to_render; next_item != current_line.end();
+             ++next_item) {
+
+          auto nZ = next_item.template get<ZOrder>();
+          auto oZ = what_to_render.template get<ZOrder>();
+
+          if (nZ < oZ) {
+            // Then ignore next_item
+            continue;
+          } else {
+            // determine if they overlap
+            auto nx_range = next_item.template get<XPos>();
+            auto ox_range = what_to_render.template get<XPos>();
+
+            if (ox_range.x2 - nx_range.x1 > 0) {
+              // They overlap
+              last_x = nx_range.x1;
+              break;
+            } else {
+              last_x = ox_range.x2;
+            }
+          }
+        }
+
+        x_ = last_x + 1;
+      };
+
+      // Advances to the next pair of image and width
+      ScanLineIterator &operator++();
+
+      // Returns which line number it is on
+      int y();
+
+      // Returns what the next x position will be
+      int x();
+
+      Handle get_base_layer() const { return {}; };
+      Handle new_layer(Rect position, int zOrder);
+      void layer_dirty(Handle layer);
+      void layer_is_transperant(Handle layer);
+      void layer_is_opaque(Handle layer);
+      void hide(Handle layer);
+      void show(Handle layer);
+      void move(Handle layer, const Rect &position);
+      void move(Handle layer, int zOrder);
+      void move(Handle layer, const Rect &position, int zOrder);
+
+      void flatten_as_scanlines();
+      void flatten_as_rects();
+    };
+  } // namespace term
