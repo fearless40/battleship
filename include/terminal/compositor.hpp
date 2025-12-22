@@ -4,6 +4,7 @@
 #include "soamemorylayout.hpp"
 #include <compare>
 #include <iterator>
+#include <stack>
 #include <vector>
 
 namespace term {
@@ -67,46 +68,54 @@ private:
     class ScanLineIterator {
       using IteratorSOA = typename SOA::Iterator;
 
+      struct line {
+        XPos pos;
+        ZOrder z;
+      };
+
+      struct span {
+        int x;
+        int x2;
+        Handle handle;
+      };
+
       SOA &soa;
       int max_x_;
       int max_y_;
       int x_;
       int y_;
-      std::vector<typename SOA::Iterator> current_line;
-      IteratorSOA current_box;
+      using VectorIT = std::vector<IteratorSOA>;
+      std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
+      IteratorSOA next_;
 
       constexpr auto getx(IteratorSOA &it) { return it.template get<XPos>(); };
+
+      constexpr auto x(IteratorSOA &it) { return it.template get<XPos>().x; };
+      constexpr auto x2(IteratorSOA &it) { return it.template get<XPos>().x2; };
+      constexpr auto zorder(IteratorSOA &it) {
+        return it.template get<ZOrder>();
+      };
+      constexpr auto handle(IteratorSOA &it) {
+        return it.template get<Handle>();
+      }
 
       // 0 0 1 1 1 1 1 0 0 0 0 2 2 2 2 2 2 2 0 0 0 5 5 5 5 5 0 0 0
       //     1 1 1 1 1         2 2 3 3 3 2 2       5 5 6 6 6 6
 
-      /* Algo To find image span to return to render
-       * find_start_position
-       * 0. current = passed_in_start
-       * 1. for( auto it = current +1; it < end(soa); ++it )
-       *        if it.x > current.x and it.z > current.z then return
-       *
-       *Front:
-       Find fist boxc.x > current.zorder
-       on next round swap front with back
-       scan from start box, if box contains current sav ecbox as current
-       next noc. iof box does not cacache then skip until x is greater than
-       current.x
-       */
+    public:
+      // Returns the image and number of pixles it represents
+      std::pair<Handle, int> line_next() {
+        auto handle_return = handle(next_);
+         if( x_ < x(stack.top()) {
+          x_ = x(stack.top());
+         }
+            else {
+          x_ = x2_;
+      }
+      
+      while( 
 
-      IteratorSOA find_front(IteratorSOA start_at) {
-        auto range_start = getx(start_at);
 
-        for (IteratorSOA it = start_at + 1; it != soa.end(); ++it) {
-          if (getx(it).x >= range_start.x && getz(it) >= z) {
-            return it;
-
-            continue;
-          }
-        }
-
-      public:
-        // Returns the image and number of pixles it represents
         std::pair<Handle, int> operator*() {
           if (x_ > max_x_) {
             // Reset cache and advance a line
@@ -176,7 +185,8 @@ private:
         // Returns what the next x position will be
         int x();
 
-        Handle get_base_layer() const { return {}; };
+        Handle get_base_layer() const {
+          return {}; };
         Handle new_layer(Rect position, int zOrder);
         void layer_dirty(Handle layer);
         void layer_is_transperant(Handle layer);
