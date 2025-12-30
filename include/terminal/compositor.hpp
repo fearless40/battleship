@@ -2,8 +2,10 @@
 
 #include "soa.hpp"
 #include "soamemorylayout.hpp"
+#include <algorithm>
 #include <compare>
 #include <iterator>
+#include <print>
 #include <stack>
 #include <vector>
 
@@ -17,6 +19,7 @@ public: // Types
     unsigned int map_index{0};
 
   public:
+    unsigned int index() { return external_value; }
     std::strong_ordering operator<=>(const Handle &other) const = default;
     friend Compositor;
   };
@@ -45,159 +48,183 @@ private:
     constexpr bool contains(int value) const noexcept {
       return value >= x && value <= x2;
     };
+  };
 
-    struct X {};
-    struct Y {};
+  struct X {};
+  struct Y {};
 
-    using XPos = Range1D<X>;
-    using YPos = Range1D<Y>;
-    using ZOrder = int;
+  using XPos = Range1D<X>;
+  using YPos = Range1D<Y>;
+  using ZOrder = int;
 
-    bool composition_dirty_{false};
+  bool composition_dirty_{false};
 
-    // These vectors are packed (no holes)
-    std::vector<Handle> dirty_layers_;
-    std::vector<Handle> visible_layers_;
+  // These vectors are packed (no holes)
+  std::vector<Handle> dirty_layers_;
+  std::vector<Handle> visible_layers_;
 
-    using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos,
-                               YPos, ZOrder, Handle>;
-    SOA soa;
+  using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
+                             ZOrder, Handle>;
+  SOA soa;
+
+public:
+  friend class ScanLineIterator;
+  class ScanLineIterator {
+    using IteratorSOA = typename SOA::Iterator;
+
+    SOA &soa;
+    int max_x_{80};
+    int max_y_{80};
+    int x_{0};
+    int x2_{0};
+    int y_{0};
+    using VectorIT = std::vector<IteratorSOA>;
+    VectorIT sorted_line;
+    std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
+    VectorIT::iterator next_;
+
+    static constexpr auto getx(IteratorSOA &it) {
+      return it.template get<XPos>();
+    };
+    static constexpr auto gety(IteratorSOA &it) {
+      return it.template get<YPos>();
+    };
+    static constexpr auto x(IteratorSOA &it) {
+      return it.template get<XPos>().x;
+    };
+    static constexpr auto x2(IteratorSOA &it) {
+      return it.template get<XPos>().x2;
+    };
+    static constexpr auto zorder(IteratorSOA &it) {
+      return it.template get<ZOrder>();
+    };
+    static constexpr auto handle(IteratorSOA &it) {
+      return it.template get<Handle>();
+    }
 
   public:
-    friend class ScanLineIterator;
-    class ScanLineIterator {
-      using IteratorSOA = typename SOA::Iterator;
+    ScanLineIterator(SOA &soa_to_use, int max_x, int max_y)
+        : soa(soa_to_use), max_x_(max_x), max_y_(max_y) {};
 
-      struct line {
-        XPos pos;
-        ZOrder z;
-      };
-
-      struct span {
-        int x;
-        int x2;
-        Handle handle;
-      };
-
-      SOA &soa;
-      int max_x_;
-      int max_y_;
-      int x_;
-      int y_;
-      using VectorIT = std::vector<IteratorSOA>;
-      std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
-      IteratorSOA next_;
-
-      constexpr auto getx(IteratorSOA &it) { return it.template get<XPos>(); };
-
-      constexpr auto x(IteratorSOA &it) { return it.template get<XPos>().x; };
-      constexpr auto x2(IteratorSOA &it) { return it.template get<XPos>().x2; };
-      constexpr auto zorder(IteratorSOA &it) {
-        return it.template get<ZOrder>();
-      };
-      constexpr auto handle(IteratorSOA &it) {
-        return it.template get<Handle>();
+    // Returns the image and number of pixles it represents
+    std::tuple<Handle, int, int> line_next() {
+      auto handle_return = handle(stack.top());
+      if (x_ < x(stack.top())) {
+        x_ = x(stack.top());
+      } else {
+        x_ = x2_;
       }
 
-      // 0 0 1 1 1 1 1 0 0 0 0 2 2 2 2 2 2 2 0 0 0 5 5 5 5 5 0 0 0
-      //     1 1 1 1 1         2 2 3 3 3 2 2       5 5 6 6 6 6
-
-    public:
-      // Returns the image and number of pixles it represents
-      std::pair<Handle, int> line_next() {
-        auto handle_return = handle(next_);
-         if( x_ < x(stack.top()) {
-          x_ = x(stack.top());
-         }
-            else {
-          x_ = x2_;
+      auto end = sorted_line.end();
+      while (next_ != end and x2_ > x2(*next_)) {
+        ++next_;
       }
-      
-      while( 
 
+      if ((next_ == end) or ((zorder(*next_) < zorder(stack.top())) and
+                             (x2_ < x2(stack.top())))) {
+        x2_ = x2(stack.top()) + 1;
+      } else {
+        x2_ = x(*next_);
+        if (next_ != end) {
+          stack.push(*next_);
+          ++next_;
+        }
+      }
 
-        std::pair<Handle, int> operator*() {
-          if (x_ > max_x_) {
-            // Reset cache and advance a line
-            ++y_;
-            current_line.clear();
+      std::println("[{},{}] Stack [{},{}]", x_, x2_, x(stack.top()),
+                   x2(stack.top()));
 
-            // Scan for onle the items in the current line
-            for (auto it = soa.begin(); it != soa.end(); ++it) {
-              if (it.template get<YPos>().contains(y())) {
-                current_line.push_back(it);
-              };
-            }
+      while (stack.size() > 0 and x2(stack.top()) < x2_) {
+        stack.pop();
+      }
 
-            // Now sort the line
-            std::sort(current_line.begin(), current_line.end(),
-                      [](auto &l, auto &r) {
-                        return l.template get<XPos>() < r.template get<XPos>();
-                      });
-          }
+      return {handle_return, x_, x2_};
+    }
 
-          auto what_to_render = current_line.begin();
-          // Find the first one that contains x()
-          for (auto &it : current_line) {
-            if (it->template get<XPos>().contains(x_)) {
-              what_to_render = what_to_render.template get<ZOrder>() <
-                                       it.template get<ZOrder>()
-                                   ? it
-                                   : what_to_render;
-            }
-          }
+  private:
+    void fill_current_line(int y) {
 
-          int last_x = 0;
-          // Find the end of the current image
-          for (auto next_item = what_to_render; next_item != current_line.end();
-               ++next_item) {
-
-            auto nZ = next_item.template get<ZOrder>();
-            auto oZ = what_to_render.template get<ZOrder>();
-
-            if (nZ < oZ) {
-              // Then ignore next_item
-              continue;
-            } else {
-              // determine if they overlap
-              auto nx_range = next_item.template get<XPos>();
-              auto ox_range = what_to_render.template get<XPos>();
-
-              if (ox_range.x2 - nx_range.x1 > 0) {
-                // They overlap
-                last_x = nx_range.x1;
-                break;
-              } else {
-                last_x = ox_range.x2;
-              }
-            }
-          }
-
-          x_ = last_x + 1;
+      std::println("Filling sorted_line");
+      sorted_line.clear();
+      for (auto it = soa.begin(); it != soa.end(); ++it) {
+        if (gety(it).contains(y)) {
+          sorted_line.push_back(it);
         };
+      }
+      std::println("Finsihed filling sorted line number entrires: {}",
+                   sorted_line.size());
+    }
 
-        // Advances to the next pair of image and width
-        ScanLineIterator &operator++();
+    void sort_current_line() {
+      std::println("Sorting");
+      std::sort(sorted_line.begin(), sorted_line.end(), [](auto &l, auto &r) {
+        unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
+        unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
+        return l_sort < r_sort;
+      });
+      std::println("Done sorting");
+    }
 
-        // Returns which line number it is on
-        int y();
+    void clear_stack() {
+      std::println("Clearing stack");
 
-        // Returns what the next x position will be
-        int x();
+      while (stack.size() > 0)
+        stack.pop();
+      std::println("Done CLearing stack");
+    }
 
-        Handle get_base_layer() const {
-          return {}; };
-        Handle new_layer(Rect position, int zOrder);
-        void layer_dirty(Handle layer);
-        void layer_is_transperant(Handle layer);
-        void layer_is_opaque(Handle layer);
-        void hide(Handle layer);
-        void show(Handle layer);
-        void move(Handle layer, const Rect &position);
-        void move(Handle layer, int zOrder);
-        void move(Handle layer, const Rect &position, int zOrder);
+  public:
+    void init_line() {
+      x_ = 0;
+      x2_ = 0;
+      clear_stack();
 
-        void flatten_as_scanlines();
-        void flatten_as_rects();
-      };
-    } // namespace term
+      fill_current_line(y_);
+      sort_current_line();
+      next_ = sorted_line.begin() + 1;
+      stack.push(*sorted_line.begin());
+    }
+  };
+
+private:
+  int max_x_{80};
+  int max_y_{80};
+  Handle next_handle_{};
+
+  Handle next_handle() {
+    next_handle_.external_value += 1;
+    next_handle_.map_index += 1;
+    return next_handle_;
+  }
+
+  void new_layer_with_handle(Rect position, int zOrder, Handle handle) {
+    soa.push_back({position.x, position.w + position.x},
+                  {position.y, position.h + position.y}, zOrder, handle);
+  }
+
+public:
+  Compositor() { new_layer_with_handle({0, 0, max_x_, max_y_}, 0, {}); }
+
+  Handle get_base_layer() const { return {}; };
+  Handle new_layer(Rect position, int zOrder) {
+    new_layer_with_handle(position, zOrder, next_handle());
+    return next_handle_;
+  };
+
+  ScanLineIterator get_scanline_render() {
+    return ScanLineIterator(soa, max_x_, max_y_);
+  }
+
+  // void layer_dirty(Handle layer);
+  // void layer_is_transperant(Handle layer);
+  // void layer_is_opaque(Handle layer);
+  // void hide(Handle layer);
+  // void show(Handle layer);
+  // void move(Handle layer, const Rect &position);
+  // void move(Handle layer, int zOrder);
+  // void move(Handle layer, const Rect &position, int zOrder);
+
+  // void flatten_as_scanlines();
+  // void flatten_as_rects();
+};
+}; // namespace term

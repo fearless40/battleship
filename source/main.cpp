@@ -1,6 +1,7 @@
 // #include "version.hpp"
 #include "soa.hpp"
 #include "soamemorylayout.hpp"
+#include "terminal/compositor.hpp"
 #include "terminal/image.hpp"
 #include "terminal/render.hpp"
 #include "terminal/term_control.hpp"
@@ -10,36 +11,7 @@
 #include <stack>
 void begin_game();
 
-int main(int argv, char *argc[]) {
-
-  // util::soa::SOA<util::soa::DynamicArray, char, int> soa;
-  // {
-  //   util::soa::SOA<util::soa::memory_layout::FixedArray<100>, char, int> soa;
-  //
-  //   soa.push_back('a', 1);
-  //   soa.push_back('b', 2);
-  //   soa.push_back('c', 3);
-  //   soa.push_back('d', 4);
-  //
-  //   std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
-  // }
-  // {
-  //   util::soa::SOA<util::soa::memory_layout::DynamicArray, char, int> soa;
-  //
-  //   soa.push_back('a', 1);
-  //   soa.push_back('b', 2);
-  //   soa.push_back('c', 3);
-  //   soa.push_back('d', 4);
-  //
-  //   for (int i = 1; i < 250; ++i) {
-  //     soa.push_back('a', i);
-  //   }
-  //
-  //   soa.remove(soa.end() - 1);
-  //
-  //   std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
-  // }
-  //
+void scanlinealgo() {
   struct layer {
     char letter{'0'};
     int x{0}, x2{0};
@@ -137,8 +109,40 @@ int main(int argv, char *argc[]) {
     l = '@';
     ++count;
   }
+}
 
-  // std::cout << output;
+void soa_test() {
+  // util::soa::SOA<util::soa::DynamicArray, char, int> soa;
+  // {
+  //   util::soa::SOA<util::soa::memory_layout::FixedArray<100>, char, int> soa;
+  //
+  //   soa.push_back('a', 1);
+  //   soa.push_back('b', 2);
+  //   soa.push_back('c', 3);
+  //   soa.push_back('d', 4);
+  //
+  //   std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
+  // }
+  // {
+  //   util::soa::SOA<util::soa::memory_layout::DynamicArray, char, int> soa;
+  //
+  //   soa.push_back('a', 1);
+  //   soa.push_back('b', 2);
+  //   soa.push_back('c', 3);
+  //   soa.push_back('d', 4);
+  //
+  //   for (int i = 1; i < 250; ++i) {
+  //     soa.push_back('a', i);
+  //   }
+  //
+  //   soa.remove(soa.end() - 1);
+  //
+  //   std::println("Capacity: {}, Size: {}", soa.capacity(), soa.size());
+  // }
+}
+
+void image_test() {
+  //
   //
   // term::TermControl tc{};
   // using ColorOnly = term::details::Pixel_<term::Color, term::ASCII>;
@@ -167,11 +171,57 @@ int main(int argv, char *argc[]) {
   //
   //   // sleep(1);
   // }
+}
+
+void compositor_test() {
+  using namespace term;
+  Compositor comp;
+
+  // layers.push_back({'0', 0, 11, 0});
+  //   layers.push_back({'a', 1, 2, 1});
+  //   layers.push_back({'b', 2, 3, 2});
+  //   layers.push_back({'c', 5, 9, 1});
+  //   layers.push_back({'e', 6, 6, 3});
+  //   layers.push_back({'d', 6, 7, 2});
+  //
+  std::string expected = "0abb0cedcc00";
+  std::string position = "0123456789ab";
+
+  const char *letters = "0abced";
+
+  comp.new_layer(Compositor::Rect{1, 0, 1, 0}, 1);
+  comp.new_layer(Compositor::Rect{2, 0, 1, 0}, 2);
+  comp.new_layer(Compositor::Rect{5, 0, 4, 0}, 1);
+  comp.new_layer(Compositor::Rect{6, 0, 1, 0}, 3);
+  comp.new_layer(Compositor::Rect{6, 0, 2, 0}, 2);
+
+  auto render = comp.get_scanline_render();
+
+  render.init_line();
+  std::string output;
+  for (int i = 0; i < 10; ++i) {
+    auto [handle, x, x2] = render.line_next();
+    std::println("Handle: {} X:{} X2:{}", handle.index(), x, x2);
+    for (int pos = x; pos < x2; ++pos) {
+      output += letters[handle.index()];
+    };
+  }
+  std::cout << "Printing the following scanline:\n";
+  std::cout << output << '\n';
+  std::cout << expected << '\n';
+  std::cout << position << '\n';
+
+  std::cout << "Done...\n";
+}
+
+int main(int argv, char *argc[]) {
 
   // std::cout << "Hello from the battleship program!\n";
   // std::cout << "Version: " << Version::MAJOR_VERSION << "."
   //           << Version::MINOR_VERSION << '\n';
-  //
+
+  compositor_test();
+
   return 0;
   begin_game();
   return 0;
