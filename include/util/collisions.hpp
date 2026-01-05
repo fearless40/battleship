@@ -1,14 +1,10 @@
 #pragma once
 
+#include "aabb.hpp"
 #include <iterator>
-struct AABB {
-  int x, y;
-  int x2, y2;
 
-  constexpr bool contains_point(int xp, int yp) const noexcept {
-    return (xp >= x && xp <= x2 && yp >= y && yp <= y2);
-  }
-};
+namespace collision {
+using AABB = util::AABB<int, int>;
 
 constexpr bool aabb_collision(const AABB &pos1, const AABB &pos2) noexcept {
 
@@ -29,7 +25,7 @@ constexpr bool any_collision(auto &&range, auto projection) {
   }
   return false;
 }
-
+} // namespace collision
 /*using CollisionIndex = std::pair<size_t, size_t>;
 constexpr std::vector<CollisionIndex> any_collision(auto &&range, auto
 projection)
