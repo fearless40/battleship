@@ -189,25 +189,34 @@ void compositor_test() {
 
   const char *letters = "0abced";
 
-  comp.new_layer(Compositor::Rect{1, 0, 1, 0}, 1);
-  comp.new_layer(Compositor::Rect{2, 0, 1, 0}, 2);
-  comp.new_layer(Compositor::Rect{5, 0, 4, 0}, 1);
-  comp.new_layer(Compositor::Rect{6, 0, 1, 0}, 3);
-  comp.new_layer(Compositor::Rect{6, 0, 2, 0}, 2);
+  comp.new_layer(util::IntRect{1, 0, 1, 0}, 1);
+  comp.new_layer(util::IntRect{2, 0, 1, 0}, 2);
+  comp.new_layer(util::IntRect{5, 0, 4, 0}, 1);
+  comp.new_layer(util::IntRect{6, 0, 1, 0}, 3);
+  comp.new_layer(util::IntRect{6, 0, 2, 0}, 2);
 
   auto render = comp.get_scanline_render();
+  auto painter = comp.get_scanline_painter();
 
   render.init_line();
+  painter.init_line();
   std::string output;
+  std::string output_painter;
   for (int i = 0; i < 10; ++i) {
     auto [handle, x, x2] = render.line_next();
-    std::println("Handle: {} X:{} X2:{}", handle.index(), x, x2);
+    auto [ph2, px, px2] = painter.line_next();
+    // std::println("Handle: {} X:{} X2:{}", handle.index(), x, x2);
     for (int pos = x; pos < x2; ++pos) {
       output += letters[handle.index()];
     };
+
+    for (int pos = px; pos < px2; ++pos) {
+      output_painter += letters[ph2.index()];
+    }
   }
   std::cout << "Printing the following scanline:\n";
-  std::cout << output << '\n';
+  std::cout << output << " : Scanline \n";
+  std::cout << output_painter << " : Painter\n";
   std::cout << expected << '\n';
   std::cout << position << '\n';
 

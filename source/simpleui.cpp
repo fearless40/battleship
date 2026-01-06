@@ -395,7 +395,7 @@ std::optional<Ship::Ships> place_ships(GameLayout const &layout) {
       std::cin >> orientation;
 
       auto rc = RowCol::from_string(row_col);
-      AABB pos;
+      collision::AABB pos;
 
       if (orientation == "" || orientation == "v")
         pos = {rc.col.size, rc.row.size, rc.col.size,

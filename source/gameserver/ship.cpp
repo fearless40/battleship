@@ -28,7 +28,7 @@ std::optional<Ship::Ships> Ship::random_ships(GameLayout const &game) {
     // std::cout << "Attempting to build placement for ship: " << ship_id.size
     // << '\n';
 
-    ships.emplace_back(ship_id, AABB{});
+    ships.emplace_back(ship_id, collision::AABB{});
     // std::cout << "Ships array: " << ships.size() << '\n';
 
     for (size_t count_attempts = 0; count_attempts < 400; ++count_attempts) {
@@ -42,7 +42,8 @@ std::optional<Ship::Ships> Ship::random_ships(GameLayout const &game) {
 
       int row = randomns::between(0, game.nbrRows.size - 1 - height);
       int col = randomns::between(0, game.nbrCols.size - 1 - width);
-      ships.back().location = AABB{col, row, col + width, row + height};
+      ships.back().location =
+          collision::AABB{col, row, col + width, row + height};
       if (!any_collisions(ships)) {
         // std::cout << "No collision placed ship\n";
         // std::format("Player {} generated: {} after {} tries", name,

@@ -23,7 +23,7 @@ struct Ship {
 
   // Data
   ShipDefinition shiplength;
-  AABB location{UNSET, UNSET, UNSET, UNSET};
+  collision::AABB location{UNSET, UNSET, UNSET, UNSET};
 
   // Functions
   constexpr Orientation orientation() const noexcept {
@@ -86,14 +86,15 @@ struct Ship {
   }
 
   static constexpr bool any_collisions(Ships const &ships) {
-    return any_collision(ships, [](auto &ship) { return ship.location; });
+    return collision::any_collision(ships,
+                                    [](auto &ship) { return ship.location; });
   }
   static std::optional<Ship> ship_at_position(Ships const &ships, RowCol pos);
   static std::optional<Ships> random_ships(GameLayout const &layout);
 };
 
 constexpr bool ships_collide(Ship const &ship1, Ship const &ship2) {
-  return aabb_collision(ship1.location, ship2.location);
+  return collision::aabb_collision(ship1.location, ship2.location);
 }
 
 // std::optional<Ship> ship_at_position(Ships const &ships, Row r, Col c) {

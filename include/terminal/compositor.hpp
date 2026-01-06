@@ -3,7 +3,9 @@
 #include "compositor_shared.hpp"
 #include "rect.hpp"
 #include "scanlinerender.hpp"
+#include "scanlinerender_painter.hpp"
 #include <vector>
+
 namespace term {
 
 class Compositor {
@@ -16,9 +18,6 @@ private:
   std::vector<compositor::Handle> visible_layers_;
 
   compositor::SOA soa;
-
-public:
-  friend class ScanLineIterator;
 
 private:
   int max_x_{80};
@@ -48,6 +47,10 @@ public:
 
   compositor::ScanLineRender get_scanline_render() {
     return compositor::ScanLineRender(soa, max_x_, max_y_);
+  }
+
+  compositor::ScanLinePainter get_scanline_painter() {
+    return compositor::ScanLinePainter(soa, max_x_, max_y_);
   }
 
   // void layer_dirty(Handle layer);

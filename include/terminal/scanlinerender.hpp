@@ -17,6 +17,7 @@ class ScanLineRender {
   VectorIT sorted_line;
   std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
   VectorIT::iterator next_;
+  bool line_finished{false};
 
   static constexpr auto getx(IteratorSOA &it) {
     return it.template get<XPos>();
@@ -43,6 +44,8 @@ public:
 
   // Returns the image and number of pixles it represents
   std::tuple<Handle, int, int> line_next() {
+    if (line_finished)
+      return {compositor::Handle{0, 0}, 0, 0};
     auto handle_return = handle(stack.top());
     if (x_ < x(stack.top())) {
       x_ = x(stack.top());
@@ -72,6 +75,9 @@ public:
     while (stack.size() > 0 and x2(stack.top()) < x2_) {
       stack.pop();
     }
+    if (x2_ > max_x_) {
+      ++y_;
+    }
 
     return {handle_return, x_, x2_};
   }
@@ -79,15 +85,15 @@ public:
 private:
   void fill_current_line(int y) {
 
-    std::println("Filling sorted_line");
+    // std::println("Filling sorted_line");
     sorted_line.clear();
     for (auto it = soa.begin(); it != soa.end(); ++it) {
       if (gety(it).contains(y)) {
         sorted_line.push_back(it);
       };
     }
-    std::println("Finsihed filling sorted line number entrires: {}",
-                 sorted_line.size());
+    // std::println("Finsihed filling sorted line number entrires: {}",
+    //              sorted_line.size());
   }
 
   void sort_current_line() {
@@ -118,6 +124,7 @@ public:
     sort_current_line();
     next_ = sorted_line.begin() + 1;
     stack.push(*sorted_line.begin());
+    line_finished = false;
   }
 };
 } // namespace term::compositor
