@@ -38,6 +38,9 @@ private:
 
 public:
   Compositor() { new_layer_with_handle({0, 0, max_x_, max_y_}, 0, {}); }
+  Compositor(int max_x, int max_y) : max_x_(max_x), max_y_(max_y) {
+    new_layer_with_handle({0, 0, max_x_, max_y_}, 0, {});
+  }
 
   compositor::Handle get_base_layer() const { return {}; };
   compositor::Handle new_layer(util::IntRect position, int zOrder) {

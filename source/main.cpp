@@ -175,7 +175,7 @@ void image_test() {
 
 void compositor_test() {
   using namespace term;
-  Compositor comp;
+  Compositor comp{15, 0};
 
   // layers.push_back({'0', 0, 11, 0});
   //   layers.push_back({'a', 1, 2, 1});
@@ -184,10 +184,10 @@ void compositor_test() {
   //   layers.push_back({'e', 6, 6, 3});
   //   layers.push_back({'d', 6, 7, 2});
   //
-  std::string expected = "0abb0cedcc00";
-  std::string position = "0123456789ab";
+  std::string expected = "0ab00cdec000000";
+  std::string position = "0123456789abcde";
 
-  const char *letters = "0abced";
+  const char *letters = "0abcde";
 
   comp.new_layer(util::IntRect{1, 0, 1, 0}, 1);
   comp.new_layer(util::IntRect{2, 0, 1, 0}, 2);

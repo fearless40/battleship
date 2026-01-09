@@ -1,9 +1,19 @@
 
 #pragma once
 #include "compositor_shared.hpp"
+#include <print>
 #include <stack>
 
 namespace term::compositor {
+
+template <typename Stack, typename Presenter>
+void print_stack(Stack stack, Presenter &&p) {
+  while (stack.size() > 0) {
+    p(stack.top());
+    stack.pop();
+  }
+}
+
 class ScanLineRender {
   using IteratorSOA = typename SOA::Iterator;
 
@@ -54,13 +64,13 @@ public:
     }
 
     auto end = sorted_line.end();
-    while (next_ != end and x2_ > x2(*next_)) {
+    while (next_ != end and x2_ >= x2(*next_)) {
       ++next_;
     }
 
     if ((next_ == end) or
         ((zorder(*next_) < zorder(stack.top())) and (x2_ < x2(stack.top())))) {
-      x2_ = x2(stack.top()) + 1;
+      x2_ = x2(stack.top()); //+ 1;
     } else {
       x2_ = x(*next_);
       if (next_ != end) {
@@ -68,13 +78,16 @@ public:
         ++next_;
       }
     }
-
-    std::println("[{},{}] Stack [{},{}]", x_, x2_, x(stack.top()),
-                 x2(stack.top()));
-
-    while (stack.size() > 0 and x2(stack.top()) < x2_) {
+    while (stack.size() > 0 and x2(stack.top()) <= x2_) {
       stack.pop();
     }
+
+    // std::println("[{},{}] Stack Sz ", x_, x2_, stack.size());
+    // print_stack(stack, [](IteratorSOA &s) {
+    //   std::print(" [{},{},{}]", x(s), x2(s), zorder(s));
+    // });
+    // std::println();
+    //
     if (x2_ > max_x_) {
       ++y_;
     }
@@ -97,21 +110,21 @@ private:
   }
 
   void sort_current_line() {
-    std::println("Sorting");
+    // std::println("Sorting");
     std::sort(sorted_line.begin(), sorted_line.end(), [](auto &l, auto &r) {
       unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
       unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
       return l_sort < r_sort;
     });
-    std::println("Done sorting");
+    // std::println("Done sorting");
   }
 
   void clear_stack() {
-    std::println("Clearing stack");
+    // std::println("Clearing stack");
 
     while (stack.size() > 0)
       stack.pop();
-    std::println("Done CLearing stack");
+    // std::println("Done CLearing stack");
   }
 
 public:
