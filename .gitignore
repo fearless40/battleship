@@ -35,12 +35,12 @@
 *.pdb 
 
 #Directories 
-/external/*
+/extern/*
 /build/*
 /bin/*
 /.cache/*
 /.vscode/*
 
 #Do not ignore CMakeLists
-!/external/CMakeLists.txt
+!/extern/CMakeLists.txt
 !/build/FileLeftEmpty.txt
