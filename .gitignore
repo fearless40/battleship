@@ -39,6 +39,7 @@
 /build/*
 /bin/*
 /.cache/*
+/Testing/*
 /.vscode/*
 
 #Do not ignore CMakeLists

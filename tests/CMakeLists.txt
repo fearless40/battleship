@@ -1,14 +1,14 @@
 
 
-find_package(Catch2 REQUIRED)
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 # if( ${Catch2_FOUND} )
 #    message(WARNING "Catch2 Not found. Not building tests.")
 #    return()
 # endif()
 
-message("Cath2 Dir: ${catch2_SOURCE_DIR}")
+list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 
+message("Cath2 Dir: ${Catch2_SOURCE_DIR}")
+message("CMAKE_MODULES: ${CMAKE_MODULE_PATH}")
 
 project(
    Tests
@@ -29,6 +29,8 @@ target_link_libraries(
 
 include(CTest)
 include(Catch)
+
+enable_testing()
 
 catch_discover_tests(scanlinerender)
 
