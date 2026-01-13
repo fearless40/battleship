@@ -4,9 +4,11 @@
 #include <print>
 #include <source_location>
 #include <string_view>
+#include <vector>
 
-void log(const std::string_view msg,
-         const std::source_location loc = std::source_location::current()) {
+static void
+log(const std::string_view msg,
+    const std::source_location loc = std::source_location::current()) {
   // std::println("Fn: {} Line: {} Msg: {}", loc.function_name(), loc.line(),
   // msg);
 }

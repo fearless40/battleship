@@ -4,7 +4,6 @@
 #include "rect.hpp"
 #include "scanlinerender.hpp"
 #include "scanlinerender_painter.hpp"
-#include <vector>
 
 namespace term {
 

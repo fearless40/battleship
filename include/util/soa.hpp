@@ -1,11 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstring>
-#include <functional>
-#include <print>
 #include <span>
 #include <stdexcept>
 #include <tuple>
@@ -163,10 +160,7 @@ public:
       // Then Allocate
 
       if constexpr (!protocol_t::is_fixed_capacity) {
-        std::println("Allocating...");
         auto new_cap = capacity() * 3 / 2 + 128;
-        std::println("Old Cap: {}, New Cap {}, Size: {}", capacity(), new_cap,
-                     size());
         (protocol_t::template allocate<structures_t>(get_array<structures_t>(),
                                                      capacity(), new_cap),
          ...);

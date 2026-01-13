@@ -3,7 +3,7 @@
 #include "compositor_shared.hpp"
 #include <print>
 #include <stack>
-
+#include <vector>
 namespace term::compositor {
 
 template <typename Stack, typename Presenter>
