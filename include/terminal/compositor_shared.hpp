@@ -25,6 +25,17 @@ using ZOrder = int;
 using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
                            ZOrder, Handle>;
 
+template <class HANDLE> struct ContigousRenderRegion {
+  HANDLE handle;
+  int xStart;
+  int xEnd;
+
+  constexpr auto begin() { return xStart; }
+  constexpr auto end() { return xEnd; }
+};
+
+using CRR = ContigousRenderRegion<Handle>;
+
 namespace soa {
 
 using IteratorSOA = typename SOA::Iterator;

@@ -41,4 +41,19 @@ TEST_CASE("ScanlineRenders", "[scanlinerender]") {
     render.init_line();
     REQUIRE(convert_output_to_string(render) == expected);
   }
+
+  SECTION("Stack based render: iterators") {
+    auto render = comp.get_scanline_render();
+    const char *letters =
+        "0abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    std::string text;
+    for (auto rows : render) {
+      for (auto cols : rows) {
+        for (int index = cols.begin(); index < cols.end(); ++index) {
+          text += letters[cols.handle.index()];
+        }
+      }
+    }
+    REQUIRE(text == expected);
+  }
 }
