@@ -59,7 +59,7 @@ public:
     constexpr Iterator(term::compositor::SOA &soa_input, RowCache &&cache_input,
                        util::AABB<int, int> extents_)
         : soa(soa_input), cache(cache_input), y_(extents_.y),
-          x_max_(extents_.x2 + 1) {}
+          x_max_(extents_.x2) {}
 
     bool operator!=(const Sentinal &sentinal) { return y_ < sentinal.y_max; }
     Row operator*() {

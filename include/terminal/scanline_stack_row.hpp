@@ -32,7 +32,7 @@ struct Row : public RowCache {
       x_ = x2_;
     }
 
-    auto end = sorted_line.end();
+    const auto end = sorted_line.end();
     while (next_ != end and x2_ >= x2(*next_)) {
       ++next_;
     }
@@ -63,13 +63,15 @@ struct Row : public RowCache {
   struct Iterator {
     Row &row;
     CRR last;
-    CRR operator*() { return last; }
+    CRR &operator*() { return last; }
     Iterator &operator++() {
+      // if (row.stack.empty())
+      //   return *this;
       last = row.line_next();
       return *this;
     }
     bool operator!=(const Sentinal &sentinal) {
-      return last.xEnd < sentinal.x_max;
+      return last.xEnd < sentinal.x_max || !row.stack.empty();
     }
     // bool operator==(const Sentinal &sentinal) {
     //   return last.xEnd >= sentinal.x_max;
@@ -88,10 +90,10 @@ struct Row : public RowCache {
     stack.push(sorted_line.front());
 
     // Run the iterator once to prime it...
-    // auto ret = Iterator(*this);
-    //++ret;
+    auto ret = Iterator(*this);
+    ++ret;
 
-    return Iterator(*this);
+    return ret;
   }
   constexpr auto end() { return Sentinal{x_max_}; }
 };

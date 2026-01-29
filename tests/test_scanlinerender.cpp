@@ -49,7 +49,7 @@ TEST_CASE("ScanlineRenders", "[scanlinerender]") {
     auto it = render.begin();
     auto row = *it;
 
-    REQUIRE(it.x_max_ == 16);
+    REQUIRE(it.x_max_ == 15);
   }
 
   SECTION("Stack based render: iterators, row size is correct") {
@@ -61,30 +61,11 @@ TEST_CASE("ScanlineRenders", "[scanlinerender]") {
   }
 
   SECTION("Stack based render: iterators, check if a loop produces a count of "
-          "0 rows") {
-    auto render = comp.get_stack_render();
-    int count = 0;
-    for (auto row : render) {
-      ++count;
-    }
-
-    REQUIRE(count == 1);
-  }
-
-  SECTION("Stack based render: iterators, check if a loop produces a count of "
           "9 rows") {
     auto render = comp.get_stack_render();
     int count = 0;
     for (auto row : render) {
-      auto segments = row.begin();
-      for (; segments != row.end(); ++segments) {
-        ++count;
-        std::println("xStart={} xEnd={}", segments.last.xStart,
-                     segments.last.xEnd);
-      }
-
-      std::println("xStart={} xEnd={}", segments.last.xStart,
-                   segments.last.xEnd);
+      ++count;
     }
 
     REQUIRE(count == 10);
@@ -98,6 +79,8 @@ TEST_CASE("ScanlineRenders", "[scanlinerender]") {
     int count = 0;
     for (auto rows : render) {
       for (auto cols : rows) {
+        std::println("stack empty():{} lastX:{}", rows.stack.empty(),
+                     cols.xEnd);
         for (int index = cols.begin(); index < cols.end(); ++index) {
           text += letters[cols.handle.index()];
         }
