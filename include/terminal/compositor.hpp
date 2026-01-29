@@ -2,7 +2,7 @@
 
 #include "compositor_shared.hpp"
 #include "rect.hpp"
-#include "scanlinerender.hpp"
+#include "scanline_stack_render.hpp"
 #include "scanlinerender_painter.hpp"
 
 namespace term {
@@ -47,11 +47,15 @@ public:
     return next_handle_;
   };
 
-  compositor::ScanLineRender get_scanline_render() {
-    return compositor::ScanLineRender(soa, max_x_, max_y_);
+  compositor::stack::Render get_stack_render() {
+    return compositor::stack::Render(soa, util::AABB{0, max_x_, 0, max_y_});
   }
 
-  compositor::ScanLinePainter get_scanline_painter() {
+  compositor::stack::StackRender get_stack_render_old() {
+    return compositor::stack::StackRender(soa, max_x_, max_y_);
+  }
+
+  compositor::ScanLinePainter get_painter_render() {
     return compositor::ScanLinePainter(soa, max_x_, max_y_);
   }
 

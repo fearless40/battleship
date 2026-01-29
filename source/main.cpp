@@ -173,55 +173,55 @@ void image_test() {
   // }
 }
 
-void compositor_test() {
-  using namespace term;
-  Compositor comp{15, 0};
-
-  // layers.push_back({'0', 0, 11, 0});
-  //   layers.push_back({'a', 1, 2, 1});
-  //   layers.push_back({'b', 2, 3, 2});
-  //   layers.push_back({'c', 5, 9, 1});
-  //   layers.push_back({'e', 6, 6, 3});
-  //   layers.push_back({'d', 6, 7, 2});
-  //
-  std::string expected = "0ab00cdec000000";
-  std::string position = "0123456789abcde";
-
-  const char *letters = "0abcde";
-
-  comp.new_layer(util::IntRect{1, 0, 1, 0}, 1);
-  comp.new_layer(util::IntRect{2, 0, 1, 0}, 2);
-  comp.new_layer(util::IntRect{5, 0, 4, 0}, 1);
-  comp.new_layer(util::IntRect{6, 0, 1, 0}, 3);
-  comp.new_layer(util::IntRect{6, 0, 2, 0}, 2);
-
-  auto render = comp.get_scanline_render();
-  auto painter = comp.get_scanline_painter();
-
-  render.init_line();
-  painter.init_line();
-  std::string output;
-  std::string output_painter;
-  for (int i = 0; i < 10; ++i) {
-    auto [handle, x, x2] = render.line_next();
-    auto [ph2, px, px2] = painter.line_next();
-    // std::println("Handle: {} X:{} X2:{}", handle.index(), x, x2);
-    for (int pos = x; pos < x2; ++pos) {
-      output += letters[handle.index()];
-    };
-
-    for (int pos = px; pos < px2; ++pos) {
-      output_painter += letters[ph2.index()];
-    }
-  }
-  std::cout << "Printing the following scanline:\n";
-  std::cout << output << " : Scanline \n";
-  std::cout << output_painter << " : Painter\n";
-  std::cout << expected << '\n';
-  std::cout << position << '\n';
-
-  std::cout << "Done...\n";
-}
+// void compositor_test() {
+//   using namespace term;
+//   Compositor comp{15, 0};
+//
+//   // layers.push_back({'0', 0, 11, 0});
+//   //   layers.push_back({'a', 1, 2, 1});
+//   //   layers.push_back({'b', 2, 3, 2});
+//   //   layers.push_back({'c', 5, 9, 1});
+//   //   layers.push_back({'e', 6, 6, 3});
+//   //   layers.push_back({'d', 6, 7, 2});
+//   //
+//   std::string expected = "0ab00cdec000000";
+//   std::string position = "0123456789abcde";
+//
+//   const char *letters = "0abcde";
+//
+//   comp.new_layer(util::IntRect{1, 0, 1, 0}, 1);
+//   comp.new_layer(util::IntRect{2, 0, 1, 0}, 2);
+//   comp.new_layer(util::IntRect{5, 0, 4, 0}, 1);
+//   comp.new_layer(util::IntRect{6, 0, 1, 0}, 3);
+//   comp.new_layer(util::IntRect{6, 0, 2, 0}, 2);
+//
+//   auto render = comp.get_scanline_render();
+//   auto painter = comp.get_scanline_painter();
+//
+//   render.init_line();
+//   painter.init_line();
+//   std::string output;
+//   std::string output_painter;
+//   for (int i = 0; i < 10; ++i) {
+//     auto [handle, x, x2] = render.line_next();
+//     auto [ph2, px, px2] = painter.line_next();
+//     // std::println("Handle: {} X:{} X2:{}", handle.index(), x, x2);
+//     for (int pos = x; pos < x2; ++pos) {
+//       output += letters[handle.index()];
+//     };
+//
+//     for (int pos = px; pos < px2; ++pos) {
+//       output_painter += letters[ph2.index()];
+//     }
+//   }
+//   std::cout << "Printing the following scanline:\n";
+//   std::cout << output << " : Scanline \n";
+//   std::cout << output_painter << " : Painter\n";
+//   std::cout << expected << '\n';
+//   std::cout << position << '\n';
+//
+//   std::cout << "Done...\n";
+// }
 
 int main(int argv, char *argc[]) {
 
@@ -229,7 +229,7 @@ int main(int argv, char *argc[]) {
   // std::cout << "Version: " << Version::MAJOR_VERSION << "."
   //           << Version::MINOR_VERSION << '\n';
 
-  compositor_test();
+  // compositor_test();
 
   return 0;
   begin_game();
