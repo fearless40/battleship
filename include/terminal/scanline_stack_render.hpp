@@ -9,6 +9,7 @@
 namespace term::compositor::stack {
 
 class Render {
+
   util::AABB<int, int> extents;
   RowStack cache_stack;
   VectorIT cache_row;
@@ -39,6 +40,8 @@ public:
   Render(term::compositor::SOA &soa_input, util::AABB<int, int> &&extents_)
       : compositor_data(soa_input), extents{extents_} {}
 
+  constexpr auto get_extents() const noexcept { return extents; }
+
   struct Iterator;
   friend struct Iterator;
 
@@ -68,7 +71,7 @@ public:
       Render::get_surfaces_in_row(cache.sorted_line, soa, y_);
       Render::sort_surfaces(cache.sorted_line);
 
-      return Row(cache, x_max_);
+      return Row(cache, x_max_ + 1);
     }
 
     Iterator &operator++() {
@@ -80,7 +83,7 @@ public:
   constexpr auto begin() {
     return Iterator{compositor_data, RowCache{cache_row, cache_stack}, extents};
   }
-  constexpr auto end() { return Sentinal{extents.y2 + 1}; }
+  constexpr auto end() { return Sentinal{extents.y2}; }
 };
 
 class StackRender {

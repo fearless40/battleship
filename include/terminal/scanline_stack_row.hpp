@@ -65,13 +65,15 @@ struct Row : public RowCache {
     CRR last;
     CRR &operator*() { return last; }
     Iterator &operator++() {
-      // if (row.stack.empty())
-      //   return *this;
-      last = row.line_next();
+      if (row.stack.empty()) {
+        last.xEnd = row.x_max_;
+      } else {
+        last = row.line_next();
+      }
       return *this;
     }
     bool operator!=(const Sentinal &sentinal) {
-      return last.xEnd < sentinal.x_max || !row.stack.empty();
+      return last.xEnd < sentinal.x_max;
     }
     // bool operator==(const Sentinal &sentinal) {
     //   return last.xEnd >= sentinal.x_max;

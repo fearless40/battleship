@@ -3,6 +3,9 @@
 
 namespace util {
 
+/***
+ * Description: Range of values [n,m). Inclusive n, exclusive m
+ */
 template <typename T, typename Tag> struct Range1D {
   T x, x2;
   std::strong_ordering
@@ -13,7 +16,7 @@ template <typename T, typename Tag> struct Range1D {
   };
 
   constexpr bool contains(T value) const noexcept {
-    return value >= x && value <= x2;
+    return value >= x && value < x2;
   };
 };
 
