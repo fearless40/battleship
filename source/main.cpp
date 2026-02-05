@@ -1,10 +1,10 @@
 // #include "version.hpp"
+#include "compositor.hpp"
+#include "image.hpp"
+#include "render.hpp"
 #include "soa.hpp"
 #include "soamemorylayout.hpp"
-#include "terminal/compositor.hpp"
-#include "terminal/image.hpp"
-#include "terminal/render.hpp"
-#include "terminal/term_control.hpp"
+#include "term_control.hpp"
 #include <iostream>
 #include <print>
 #include <ranges>
