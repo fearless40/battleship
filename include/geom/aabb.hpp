@@ -1,6 +1,6 @@
 #pragma once
 
-namespace util {
+namespace geom {
 
 // X and Y are seperate to allow for strong types to be used
 
@@ -13,4 +13,4 @@ template <typename X, typename Y> struct AABB {
   }
 };
 
-} // namespace util
+} // namespace geom

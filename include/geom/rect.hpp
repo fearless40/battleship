@@ -1,6 +1,6 @@
 #pragma once
 
-namespace util {
+namespace geom {
 
 template <typename X, typename Y, typename W, typename H> struct RectSafe {
   X x;
@@ -11,4 +11,4 @@ template <typename X, typename Y, typename W, typename H> struct RectSafe {
 
 using IntRect = RectSafe<int, int, int, int>;
 
-} // namespace util
+} // namespace geom

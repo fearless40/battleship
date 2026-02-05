@@ -4,7 +4,7 @@
 #include <iterator>
 
 namespace collision {
-using AABB = util::AABB<int, int>;
+using AABB = geom::AABB<int, int>;
 
 constexpr bool aabb_collision(const AABB &pos1, const AABB &pos2) noexcept {
 
