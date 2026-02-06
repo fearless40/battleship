@@ -13,6 +13,6 @@ struct Y_TAG {};
 using X = TypedPosition<int, detail::X_TAG, detail::AbsoluteUNIT>;
 using Y = TypedPosition<int, detail::Y_TAG, detail::AbsoluteUNIT>;
 using Width = TypedDimension<X>;
-using Length = TypedDimension<Y>;
+using Height = TypedDimension<Y>;
 
 } // namespace geom

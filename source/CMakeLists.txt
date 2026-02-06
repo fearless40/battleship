@@ -41,6 +41,8 @@ target_sources( adam.geom
       ${ROOT_DIR}/include/geom/onedrange.hpp
       ${ROOT_DIR}/include/geom/rect.hpp
       ${ROOT_DIR}/include/geom/rowcol.hpp
+      ${ROOT_INCLUDE}/geom/relative_dimension.hpp
+      ${ROOT_INCLUDE}/geom/typed_position.hpp
 )
 
 

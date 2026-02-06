@@ -34,6 +34,7 @@ configure_file(
 )
 
 set( ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" )
+set( ROOT_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 # add_subdirectory(external)
 add_subdirectory( source )

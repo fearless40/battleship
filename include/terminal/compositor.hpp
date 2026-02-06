@@ -19,8 +19,8 @@ private:
   compositor::SOA soa;
 
 private:
-  int max_x_{80};
-  int max_y_{80};
+  compositor::X max_x_{80};
+  compositor::Y max_y_{80};
   compositor::Handle next_handle_{};
 
   compositor::Handle next_handle() {
@@ -29,36 +29,41 @@ private:
     return next_handle_;
   }
 
-  void new_layer_with_handle(util::IntRect position, int zOrder,
+  void new_layer_with_handle(geom::IntRect position, int zOrder,
                              compositor::Handle handle) {
     soa.push_back({position.x, position.w + position.x},
                   {position.y, position.h + position.y}, zOrder, handle);
   }
 
 public:
-  Compositor() { new_layer_with_handle({0, 0, max_x_, max_y_}, 0, {}); }
+  Compositor() {
+    new_layer_with_handle({0, 0, max_x_.underlying(), max_y_.underlying()}, 0,
+                          {});
+  }
   Compositor(int max_x, int max_y) : max_x_(max_x), max_y_(max_y) {
-    new_layer_with_handle({0, 0, max_x_, max_y_}, 0, {});
+    new_layer_with_handle({0, 0, max_x_.underlying(), max_y_.underlying()}, 0,
+                          {});
   }
 
   compositor::Handle get_base_layer() const { return {}; };
-  compositor::Handle new_layer(util::IntRect position, int zOrder) {
+  compositor::Handle new_layer(geom::IntRect position, int zOrder) {
     new_layer_with_handle(position, zOrder, next_handle());
     return next_handle_;
   };
 
   compositor::stack::Render get_stack_render() {
-    return compositor::stack::Render(soa, util::AABB{0, max_x_, 0, max_y_});
+    return compositor::stack::Render(
+        soa, geom::AABB{0, max_x_.underlying(), 0, max_y_.underlying()});
   }
 
-  compositor::stack::StackRender get_stack_render_old() {
-    return compositor::stack::StackRender(soa, max_x_, max_y_);
-  }
-
-  compositor::ScanLinePainter get_painter_render() {
-    return compositor::ScanLinePainter(soa, max_x_, max_y_);
-  }
-
+  // compositor::stack::StackRender get_stack_render_old() {
+  //   return compositor::stack::StackRender(soa, max_x_, max_y_);
+  // }
+  //
+  // compositor::ScanLinePainter get_painter_render() {
+  //   return compositor::ScanLinePainter(soa, max_x_, max_y_);
+  // }
+  //
   // void layer_dirty(Handle layer);
   // void layer_is_transperant(Handle layer);
   // void layer_is_opaque(Handle layer);

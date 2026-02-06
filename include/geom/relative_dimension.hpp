@@ -4,16 +4,15 @@
 namespace geom {
 
 template <typename TypedPositionT> struct TypedDimension {
-  using typed_position_t = TypedPositionT;
-  using underlying_t = typename typed_position_t::underlying_t;
+  using position_t = TypedPositionT;
+  using underlying_t = typename position_t::underlying_t;
   using type = TypedDimension<TypedPositionT>;
 
   underlying_t value;
 
   constexpr underlying_t underlying() const noexcept { return value; }
 
-  constexpr TypedDimension(typed_position_t const &first,
-                           typed_position_t const &second)
+  constexpr TypedDimension(position_t const &first, position_t const &second)
       : value(second.underlying() - first.underlying()) {}
 
   std::strong_ordering operator<=>(type const &other) const noexcept = default;

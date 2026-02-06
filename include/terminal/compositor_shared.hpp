@@ -1,8 +1,10 @@
 #pragma once
 #include "soa.hpp"
 #include "soamemorylayout.hpp"
+#include "typed_position.hpp"
 #include <compare>
 #include <onedrange.hpp>
+#include <xy.hpp>
 
 namespace term::compositor {
 class Handle {
@@ -15,11 +17,18 @@ public:
   std::strong_ordering operator<=>(const Handle &other) const = default;
 };
 
-struct X {};
-struct Y {};
+namespace detail {
+struct CharUnit {};
 
-using XPos = util::Range1D<int, X>;
-using YPos = util::Range1D<int, Y>;
+} // namespace detail
+
+using X = geom::TypedPosition<int, geom::detail::X_TAG, detail::CharUnit>;
+using Y = geom::TypedPosition<int, geom::detail::Y_TAG, detail::CharUnit>;
+using Width = geom::TypedDimension<X>;
+using Height = geom::TypedDimension<Y>;
+
+using XPos = geom::Range1D<Width>;
+using YPos = geom::Range1D<Height>;
 using ZOrder = int;
 
 using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
@@ -27,8 +36,8 @@ using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
 
 template <class HANDLE> struct ContigousRenderRegion {
   HANDLE handle;
-  int xStart;
-  int xEnd;
+  X xStart;
+  X xEnd;
 
   constexpr auto begin() { return xStart; }
   constexpr auto end() { return xEnd; }
@@ -41,9 +50,9 @@ namespace soa {
 using IteratorSOA = typename SOA::Iterator;
 static constexpr auto getx(IteratorSOA &it) { return it.template get<XPos>(); };
 static constexpr auto gety(IteratorSOA &it) { return it.template get<YPos>(); };
-static constexpr auto x(IteratorSOA &it) { return it.template get<XPos>().x; };
+static constexpr auto x(IteratorSOA &it) { return it.template get<XPos>().p; };
 static constexpr auto x2(IteratorSOA &it) {
-  return it.template get<XPos>().x2;
+  return it.template get<XPos>().p2;
 };
 static constexpr auto zorder(IteratorSOA &it) {
   return it.template get<ZOrder>();

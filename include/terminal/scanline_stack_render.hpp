@@ -10,7 +10,7 @@ namespace term::compositor::stack {
 
 class Render {
 
-  util::AABB<int, int> extents;
+  geom::AABB<int, int> extents;
   RowStack cache_stack;
   VectorIT cache_row;
   term::compositor::SOA &compositor_data;
@@ -30,14 +30,16 @@ class Render {
   static constexpr void sort_surfaces(VectorIT &input) {
     using namespace soa;
     std::sort(input.begin(), input.end(), [](auto &l, auto &r) {
-      unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
-      unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
+      unsigned long l_sort =
+          ((x(l).underlying() & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
+      unsigned long r_sort =
+          ((x(r).underlying() & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
       return l_sort < r_sort;
     });
   }
 
 public:
-  Render(term::compositor::SOA &soa_input, util::AABB<int, int> &&extents_)
+  Render(term::compositor::SOA &soa_input, geom::AABB<int, int> &&extents_)
       : compositor_data(soa_input), extents{extents_} {}
 
   constexpr auto get_extents() const noexcept { return extents; }
@@ -60,7 +62,7 @@ public:
     Iterator(Iterator &&) = default;
 
     constexpr Iterator(term::compositor::SOA &soa_input, RowCache &&cache_input,
-                       util::AABB<int, int> extents_)
+                       geom::AABB<int, int> extents_)
         : soa(soa_input), cache(cache_input), y_(extents_.y),
           x_max_(extents_.x2) {}
 
@@ -86,101 +88,103 @@ public:
   constexpr auto end() { return Sentinal{extents.y2}; }
 };
 
-class StackRender {
-
-  using VectorIT = std::vector<soa::IteratorSOA>;
-  using RowStack = std::stack<soa::IteratorSOA, std::vector<soa::IteratorSOA>>;
-
-  SOA &soa;
-  int min_x_{0};
-  int min_y_{0};
-  int max_x_{80};
-  int max_y_{80};
-  int x_{0};
-  int x2_{0};
-  int y_{0};
-  VectorIT sorted_line;
-  std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
-  VectorIT::iterator next_;
-
-public:
-  StackRender(SOA &soa_to_use, int max_x, int max_y)
-      : soa(soa_to_use), max_x_(max_x), max_y_(max_y) {};
-
-  // Returns the image and number of pixles it represents
-  CRR line_next() {
-    using namespace soa;
-    auto handle_return = handle(stack.top());
-    if (x_ < x(stack.top())) {
-      x_ = x(stack.top());
-    } else {
-      x_ = x2_;
-    }
-
-    auto end = sorted_line.end();
-    while (next_ != end and x2_ >= x2(*next_)) {
-      ++next_;
-    }
-
-    if ((next_ == end) or
-        ((zorder(*next_) < zorder(stack.top())) and (x2_ < x2(stack.top())))) {
-      x2_ = x2(stack.top()); //+ 1;
-    } else {
-      x2_ = x(*next_);
-      if (next_ != end) {
-        stack.push(*next_);
-        ++next_;
-      }
-    }
-    while (stack.size() > 0 and x2(stack.top()) <= x2_) {
-      stack.pop();
-    }
-
-    // std::println("[{},{}] Stack Sz ", x_, x2_, stack.size());
-    // print_stack(stack, [](IteratorSOA &s) {
-    //   std::print(" [{},{},{}]", x(s), x2(s), zorder(s));
-    // });
-    // std::println();
-    //
-    if (x2_ > max_x_) {
-      ++y_;
-    }
-
-    return {handle_return, x_, x2_};
-  }
-
-private:
-  void fill_current_line(int y) {
-    using namespace soa;
-    sorted_line.clear();
-    for (auto it = soa.begin(); it != soa.end(); ++it) {
-      if (gety(it).contains(y)) {
-        sorted_line.push_back(it);
-      };
-    }
-  }
-
-  void sort_current_line() {
-    using namespace soa;
-    std::sort(sorted_line.begin(), sorted_line.end(), [](auto &l, auto &r) {
-      unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
-      unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
-      return l_sort < r_sort;
-    });
-  }
-
-  void clear_stack() { util::stack::clear(stack); }
-
-public:
-  void init_line() {
-    x_ = 0;
-    x2_ = 0;
-    clear_stack();
-
-    fill_current_line(y_);
-    sort_current_line();
-    next_ = sorted_line.begin() + 1;
-    stack.push(*sorted_line.begin());
-  }
-};
+// class StackRender {
+//
+//   using VectorIT = std::vector<soa::IteratorSOA>;
+//   using RowStack = std::stack<soa::IteratorSOA,
+//   std::vector<soa::IteratorSOA>>;
+//
+//   SOA &soa;
+//   int min_x_{0};
+//   int min_y_{0};
+//   int max_x_{80};
+//   int max_y_{80};
+//   int x_{0};
+//   int x2_{0};
+//   int y_{0};
+//   VectorIT sorted_line;
+//   std::stack<IteratorSOA, std::vector<IteratorSOA>> stack{};
+//   VectorIT::iterator next_;
+//
+// public:
+//   StackRender(SOA &soa_to_use, int max_x, int max_y)
+//       : soa(soa_to_use), max_x_(max_x), max_y_(max_y) {};
+//
+//   // Returns the image and number of pixles it represents
+//   CRR line_next() {
+//     using namespace soa;
+//     auto handle_return = handle(stack.top());
+//     if (x_ < x(stack.top())) {
+//       x_ = x(stack.top());
+//     } else {
+//       x_ = x2_;
+//     }
+//
+//     auto end = sorted_line.end();
+//     while (next_ != end and x2_ >= x2(*next_)) {
+//       ++next_;
+//     }
+//
+//     if ((next_ == end) or
+//         ((zorder(*next_) < zorder(stack.top())) and (x2_ < x2(stack.top()))))
+//         {
+//       x2_ = x2(stack.top()); //+ 1;
+//     } else {
+//       x2_ = x(*next_);
+//       if (next_ != end) {
+//         stack.push(*next_);
+//         ++next_;
+//       }
+//     }
+//     while (stack.size() > 0 and x2(stack.top()) <= x2_) {
+//       stack.pop();
+//     }
+//
+//     // std::println("[{},{}] Stack Sz ", x_, x2_, stack.size());
+//     // print_stack(stack, [](IteratorSOA &s) {
+//     //   std::print(" [{},{},{}]", x(s), x2(s), zorder(s));
+//     // });
+//     // std::println();
+//     //
+//     if (x2_ > max_x_) {
+//       ++y_;
+//     }
+//
+//     return {handle_return, x_, x2_};
+//   }
+//
+// private:
+//   void fill_current_line(int y) {
+//     using namespace soa;
+//     sorted_line.clear();
+//     for (auto it = soa.begin(); it != soa.end(); ++it) {
+//       if (gety(it).contains(y)) {
+//         sorted_line.push_back(it);
+//       };
+//     }
+//   }
+//
+//   void sort_current_line() {
+//     using namespace soa;
+//     std::sort(sorted_line.begin(), sorted_line.end(), [](auto &l, auto &r) {
+//       unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
+//       unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
+//       return l_sort < r_sort;
+//     });
+//   }
+//
+//   void clear_stack() { util::stack::clear(stack); }
+//
+// public:
+//   void init_line() {
+//     x_ = 0;
+//     x2_ = 0;
+//     clear_stack();
+//
+//     fill_current_line(y_);
+//     sort_current_line();
+//     next_ = sorted_line.begin() + 1;
+//     stack.push(*sorted_line.begin());
+//   }
+// };
 } // namespace term::compositor::stack

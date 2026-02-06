@@ -17,9 +17,9 @@ struct RowCache {
 };
 
 struct Row : public RowCache {
-  int x_{0};
-  int x2_{0};
-  int x_max_{80};
+  X x_{0};
+  X x2_{0};
+  X x_max_{80};
   VectorIT::iterator next_;
 
   constexpr CRR line_next() {
@@ -57,7 +57,7 @@ struct Row : public RowCache {
   constexpr Row(RowCache &cache, int x_max) : RowCache(cache), x_max_(x_max) {};
 
   struct Sentinal {
-    int x_max;
+    X x_max;
   };
 
   struct Iterator {
@@ -84,8 +84,10 @@ struct Row : public RowCache {
     using namespace soa;
     util::stack::clear(stack);
     std::sort(sorted_line.begin(), sorted_line.end(), [](auto &l, auto &r) {
-      unsigned long l_sort = ((x(l) & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
-      unsigned long r_sort = ((x(r) & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
+      unsigned long l_sort =
+          ((x(l).underlying() & 0xFFFF) << 16) | (zorder(l) & 0xFFFF);
+      unsigned long r_sort =
+          ((x(r).underlying() & 0xFFFF) << 16) | (zorder(r) & 0xFFFF);
       return l_sort < r_sort;
     });
     next_ = sorted_line.begin() + 1;

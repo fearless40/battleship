@@ -13,6 +13,8 @@ log(const std::string_view msg,
   // msg);
 }
 
+#ifdef TURNOFFTHISCODE
+
 namespace term::compositor {
 
 class ScanLinePainter {
@@ -134,3 +136,6 @@ public:
   }
 };
 } // namespace term::compositor
+//
+//
+#endif
