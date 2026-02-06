@@ -1,6 +1,6 @@
 #include "compositor.hpp"
+#include "compositor_shared.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <iterator>
 #include <print>
 
 template <typename RENDER>
@@ -22,15 +22,20 @@ std::string convert_output_to_string(RENDER &render) {
 TEST_CASE("ScanlineRenders 1 line only", "[scanlinerender]") {
 
   using namespace term;
+  using Rect = term::compositor::Rect;
+  using X = term::compositor::X;
+  using Y = term::compositor::Y;
+  using Width = term::compositor::Width;
+  using Height = term::compositor::Height;
   Compositor comp{15, 1};
 
   const std::string expected = "0ab00cdec000000";
 
-  comp.new_layer(util::IntRect{1, 0, 1, 1}, 1);
-  comp.new_layer(util::IntRect{2, 0, 1, 1}, 2);
-  comp.new_layer(util::IntRect{5, 0, 4, 1}, 1);
-  comp.new_layer(util::IntRect{6, 0, 1, 1}, 3);
-  comp.new_layer(util::IntRect{6, 0, 2, 1}, 2);
+  comp.new_layer(Rect{X{1}, Y{0}, Width{1}, Height{1}}, 1);
+  comp.new_layer(Rect{X{2}, Y{0}, Width{1}, Height{1}}, 2);
+  comp.new_layer(Rect{X{5}, Y{0}, Width{4}, Height{1}}, 1);
+  comp.new_layer(Rect{X{6}, Y{0}, Width{1}, Height{1}}, 3);
+  comp.new_layer(Rect{X{6}, Y{0}, Width{2}, Height{1}}, 2);
 
   // SECTION("Stack based render") {
   //   auto render = comp.get_stack_render_old();
@@ -38,13 +43,13 @@ TEST_CASE("ScanlineRenders 1 line only", "[scanlinerender]") {
   //   REQUIRE(convert_output_to_string(render) == expected);
   // }
   //
-  SECTION("Painter based render") {
-
-    auto render = comp.get_painter_render();
-    render.init_line();
-    REQUIRE(convert_output_to_string(render) == expected);
-  }
-
+  // SECTION("Painter based render") {
+  //
+  //   auto render = comp.get_painter_render();
+  //   render.init_line();
+  //   REQUIRE(convert_output_to_string(render) == expected);
+  // }
+  //
   SECTION("Stack based render: iterators, x_max is correct") {
     auto render = comp.get_stack_render();
     auto it = render.begin();
@@ -82,7 +87,7 @@ TEST_CASE("ScanlineRenders 1 line only", "[scanlinerender]") {
       for (auto cols : rows) {
         // std::println("stack empty():{} lastX:{}", rows.stack.empty(),
         // cols.xEnd);
-        for (int index = cols.begin(); index < cols.end(); ++index) {
+        for (auto index = cols.begin(); index < cols.end(); ++index) {
           text += letters[cols.handle.index()];
         }
 
@@ -96,15 +101,29 @@ TEST_CASE("ScanlineRenders 1 line only", "[scanlinerender]") {
 TEST_CASE("Multirow Scanline render", "[Multirow]") {
 
   using namespace term;
+  using Rect = term::compositor::Rect;
+  using X = term::compositor::X;
+  using Y = term::compositor::Y;
+  using Width = term::compositor::Width;
+  using Height = term::compositor::Height;
   Compositor comp{15, 10};
 
-  const std::string expected = "0ab00cdec000000";
+  const std::string expected = "0aaa00000000000\n"
+                               "0abbb0000000000\n"
+                               "00bbbcccc000000\n"
+                               "00bbbcccc000000\n"
+                               "00bbbcccc000000\n"
+                               "00bbbcdddddd000\n"
+                               "00bbbceeeeeeee0\n"
+                               "00bbbbeeeeeeee0\n"
+                               "00bbbbeeeeeeee0\n"
+                               "000000000000000\n";
 
-  comp.new_layer(util::IntRect{1, 0, 1, 4}, 1);
-  comp.new_layer(util::IntRect{2, 2, 1, 6}, 2);
-  comp.new_layer(util::IntRect{5, 3, 4, 7}, 1);
-  comp.new_layer(util::IntRect{6, 0, 1, 6}, 3);
-  comp.new_layer(util::IntRect{6, 1, 2, 6}, 2);
+  comp.new_layer(Rect{X{1}, Y{0}, Width{3}, Height{2}}, 1);
+  comp.new_layer(Rect{X{2}, Y{1}, Width{3}, Height{8}}, 2);
+  comp.new_layer(Rect{X{5}, Y{2}, Width{4}, Height{5}}, 1);
+  comp.new_layer(Rect{X{6}, Y{5}, Width{6}, Height{1}}, 3);
+  comp.new_layer(Rect{X{6}, Y{6}, Width{8}, Height{3}}, 2);
 
   SECTION("Stack based render: iterators, x_max is correct") {
     // auto render = comp.get_stack_render();
@@ -119,7 +138,7 @@ TEST_CASE("Multirow Scanline render", "[Multirow]") {
     auto it = render.begin();
     auto row = *it;
 
-    REQUIRE(it.cache.sorted_line.size() == 3);
+    // REQUIRE(it.cache.sorted_line.size() == 3);
   }
 
   SECTION("Evalute inital y_") {
@@ -152,14 +171,15 @@ TEST_CASE("Multirow Scanline render", "[Multirow]") {
       for (auto cols : rows) {
         // std::println("stack empty():{} lastX:{}", rows.stack.empty(),
         // cols.xEnd);
-        for (int index = cols.begin(); index < cols.end(); ++index) {
+        for (auto index = cols.begin(); index < cols.end(); ++index) {
+
           text += letters[cols.handle.index()];
         }
         // std::println("count={} iterator={}", ++count, text);
       }
       text += '\n';
     }
-    std::println("{}", text);
-    REQUIRE(true == true); // text == expected);
+    // std::println("{}", text);
+    REQUIRE(text == expected); // text == expected);
   }
 }

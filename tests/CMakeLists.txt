@@ -23,8 +23,8 @@ add_executable(scanlinerender
 target_link_libraries(
    scanlinerender
    PRIVATE Catch2::Catch2WithMain
-   PRIVATE util
-   PRIVATE terminal
+   PRIVATE adam::util
+   PRIVATE adam::terminal
 )
 
 include(CTest)

@@ -4,6 +4,7 @@
 #include "typed_position.hpp"
 #include <compare>
 #include <onedrange.hpp>
+#include <rect.hpp>
 #include <xy.hpp>
 
 namespace term::compositor {
@@ -30,6 +31,8 @@ using Height = geom::TypedDimension<Y>;
 using XPos = geom::Range1D<Width>;
 using YPos = geom::Range1D<Height>;
 using ZOrder = int;
+
+using Rect = geom::TypedRect<Width, Height>;
 
 using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
                            ZOrder, Handle>;

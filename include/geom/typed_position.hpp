@@ -11,41 +11,42 @@ struct TypedPosition {
 
   template <typename ValueT>
     requires std::convertible_to<underlying_t, ValueT>
-  TypedPosition(ValueT val) : value(static_cast<underlying_t>(val)) {}
+  constexpr TypedPosition(ValueT val) : value(static_cast<underlying_t>(val)) {}
 
-  TypedPosition() : value(0) {}
+  constexpr TypedPosition() : value(0) {}
 
   underlying_t value;
 
   constexpr underlying_t underlying() const noexcept { return value; }
-  std::strong_ordering operator<=>(type const &other) const noexcept = default;
+  constexpr std::strong_ordering
+  operator<=>(type const &other) const noexcept = default;
 
   constexpr bool operator==(type const &other) const noexcept = default;
   constexpr bool operator!=(type const &other) const noexcept = default;
 
-  constexpr type &operator+=(type const &other) const noexcept {
+  constexpr type &operator+=(type const &other) noexcept {
     value += other.value;
     return *this;
   }
-  constexpr type &operator-=(type const &other) const noexcept {
+  constexpr type &operator-=(type const &other) noexcept {
     value -= other.value;
     return *this;
   }
-  constexpr type &operator++() const noexcept {
+  constexpr type &operator++() noexcept {
     value += static_cast<underlying_t>(1);
     return *this;
   }
-  constexpr type operator++(int) const noexcept {
+  constexpr type operator++(int) noexcept {
     auto ret = value;
     value += static_cast<underlying_t>(1);
     return ret;
   }
-  constexpr type &operator--() const noexcept {
+  constexpr type &operator--() noexcept {
     value -= static_cast<underlying_t>(1);
     return *this;
   }
 
-  constexpr type &operator--(int) const noexcept {
+  constexpr type &operator--(int) noexcept {
     auto ret = *this;
     value -= static_cast<underlying_t>(1);
     return ret;
@@ -61,14 +62,14 @@ struct TypedPosition {
     return *this;
   }
 
-  friend constexpr type operator+(const type &left,
-                                  const type &right) noexcept {
-    return type{left.value + right.value};
-  }
-  friend constexpr type operator-(const type &left,
-                                  const type &right) noexcept {
-    return type{left.value - right.value};
-  }
+  // friend constexpr type operator+(const type &left,
+  //                                 const type &right) noexcept {
+  //   return type{left.value + right.value};
+  // }
+  // friend constexpr type operator-(const type &left,
+  //                                 const type &right) noexcept {
+  //   return type{left.value - right.value};
+  // }
 };
 
 } // namespace geom

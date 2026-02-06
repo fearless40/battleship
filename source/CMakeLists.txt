@@ -6,6 +6,7 @@ add_library(
    adam.util
    INTERFACE
 )
+add_library(adam::util ALIAS adam.util)
 
 target_sources( adam.util
    PUBLIC
@@ -30,6 +31,7 @@ add_library( adam.geom
    STATIC
       geom/rowcol.cpp
 )
+add_library(adam::geom ALIAS adam.geom)
 
 target_sources( adam.geom
    PUBLIC
@@ -51,6 +53,8 @@ add_library( adam.terminal
       terminal/keyparser.cpp
       terminal/term_control.cpp
 )
+
+add_library( adam::terminal ALIAS adam.terminal)
 
 target_sources( adam.terminal
    PUBLIC
@@ -93,6 +97,8 @@ add_library(
       ai/stupidai.cpp
 )
 
+add_library( battleship::AIBasic ALIAS battleship.AIBasic )
+
 target_sources( battleship.AIBasic
    PUBLIC
       FILE_SET HEADERS
@@ -129,6 +135,8 @@ add_library(
    STATIC
       gameserver/ship.cpp
    )
+
+add_library( battleship::gameserver ALIAS battleship.gameserver)
 
 target_sources( battleship.gameserver
    PUBLIC

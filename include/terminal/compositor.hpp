@@ -4,6 +4,7 @@
 #include "rect.hpp"
 #include "scanline_stack_render.hpp"
 #include "scanlinerender_painter.hpp"
+#include <utility>
 
 namespace term {
 
@@ -19,8 +20,8 @@ private:
   compositor::SOA soa;
 
 private:
-  compositor::X max_x_{80};
-  compositor::Y max_y_{80};
+  compositor::Width max_x_{80};
+  compositor::Height max_y_{80};
   compositor::Handle next_handle_{};
 
   compositor::Handle next_handle() {
@@ -29,25 +30,25 @@ private:
     return next_handle_;
   }
 
-  void new_layer_with_handle(geom::IntRect position, int zOrder,
+  void new_layer_with_handle(compositor::Rect &&pos, int zOrder,
                              compositor::Handle handle) {
-    soa.push_back({position.x, position.w + position.x},
-                  {position.y, position.h + position.y}, zOrder, handle);
+    soa.push_back(pos.xRange(), pos.yRange(), zOrder, handle);
   }
 
 public:
   Compositor() {
-    new_layer_with_handle({0, 0, max_x_.underlying(), max_y_.underlying()}, 0,
-                          {});
+    new_layer_with_handle(compositor::Rect{max_x_, max_y_}, 0,
+                          compositor::Handle{});
   }
-  Compositor(int max_x, int max_y) : max_x_(max_x), max_y_(max_y) {
-    new_layer_with_handle({0, 0, max_x_.underlying(), max_y_.underlying()}, 0,
-                          {});
+  Compositor(compositor::Width width, compositor::Height height)
+      : max_x_(width), max_y_(height) {
+    new_layer_with_handle(compositor::Rect{max_x_, max_y_}, 0,
+                          compositor::Handle{});
   }
 
   compositor::Handle get_base_layer() const { return {}; };
-  compositor::Handle new_layer(geom::IntRect position, int zOrder) {
-    new_layer_with_handle(position, zOrder, next_handle());
+  compositor::Handle new_layer(compositor::Rect &&position, int zOrder) {
+    new_layer_with_handle(std::move(position), zOrder, next_handle());
     return next_handle_;
   };
 

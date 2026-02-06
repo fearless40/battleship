@@ -12,6 +12,8 @@ template <typename TypedPositionT> struct TypedDimension {
 
   constexpr underlying_t underlying() const noexcept { return value; }
 
+  constexpr TypedDimension(underlying_t value_) : value(value_) {}
+
   constexpr TypedDimension(position_t const &first, position_t const &second)
       : value(second.underlying() - first.underlying()) {}
 
@@ -64,6 +66,15 @@ template <typename TypedPositionT> struct TypedDimension {
   friend constexpr type operator-(const type &left,
                                   const type &right) noexcept {
     return type{left.value - right.value};
+  }
+
+  friend constexpr position_t operator+(const position_t &left,
+                                        const type &dimension) noexcept {
+    return position_t{left.underlying() + dimension.underlying()};
+  }
+  friend constexpr position_t operator-(const position_t &left,
+                                        const type &dimension) noexcept {
+    return position_t{left.underlying() - dimension.underlying()};
   }
 };
 } // namespace geom
