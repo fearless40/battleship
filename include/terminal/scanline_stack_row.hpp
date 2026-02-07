@@ -51,7 +51,7 @@ struct Row : public RowCache {
       stack.pop();
     }
 
-    return {handle_return, x_, x2_};
+    return {handle_return, XPos{x_, x2_}};
   }
 
   constexpr Row(RowCache &cache, int x_max) : RowCache(cache), x_max_(x_max) {};
@@ -66,14 +66,14 @@ struct Row : public RowCache {
     CRR &operator*() { return last; }
     Iterator &operator++() {
       if (row.stack.empty()) {
-        last.xEnd = row.x_max_;
+        last.range.p2 = row.x_max_;
       } else {
         last = row.line_next();
       }
       return *this;
     }
     bool operator!=(const Sentinal &sentinal) {
-      return last.xEnd < sentinal.x_max;
+      return last.range.p2 < sentinal.x_max;
     }
     // bool operator==(const Sentinal &sentinal) {
     //   return last.xEnd >= sentinal.x_max;

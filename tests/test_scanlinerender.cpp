@@ -1,7 +1,10 @@
 #include "compositor.hpp"
 #include "compositor_shared.hpp"
 #include <catch2/catch_test_macros.hpp>
+#include <concepts>
+#include <iterator>
 #include <print>
+#include <ranges>
 
 template <typename RENDER>
 std::string convert_output_to_string(RENDER &render) {
@@ -87,7 +90,9 @@ TEST_CASE("ScanlineRenders 1 line only", "[scanlinerender]") {
       for (auto cols : rows) {
         // std::println("stack empty():{} lastX:{}", rows.stack.empty(),
         // cols.xEnd);
-        for (auto index = cols.begin(); index < cols.end(); ++index) {
+        auto handle = cols.handle;
+
+        for (auto index : cols.range) {
           text += letters[cols.handle.index()];
         }
 
@@ -108,6 +113,7 @@ TEST_CASE("Multirow Scanline render", "[Multirow]") {
   using Height = term::compositor::Height;
   Compositor comp{15, 10};
 
+  using rng = term::compositor::XPos;
   const std::string expected = "0aaa00000000000\n"
                                "0abbb0000000000\n"
                                "00bbbcccc000000\n"
@@ -171,7 +177,7 @@ TEST_CASE("Multirow Scanline render", "[Multirow]") {
       for (auto cols : rows) {
         // std::println("stack empty():{} lastX:{}", rows.stack.empty(),
         // cols.xEnd);
-        for (auto index = cols.begin(); index < cols.end(); ++index) {
+        for (auto index = cols.range.p; index < cols.range.p2; ++index) {
 
           text += letters[cols.handle.index()];
         }

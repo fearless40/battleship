@@ -24,7 +24,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
    endif()
    add_compile_options("/WX" "/MP")
 else()
-   add_compile_options("--std=c++23")
+   add_compile_options("--std=c++23" "-fconcepts-diagnostics-depth=10")
 
 endif()
 

@@ -18,6 +18,8 @@ template <typename DimensonT> struct Range1D {
   constexpr Range1D(value_t start, dimension_t length)
       : p{start}, p2{start + length} {}
 
+  constexpr Range1D(value_t start, value_t end) : p(start), p2(end) {}
+
   value_t p, p2;
   std::strong_ordering operator<=>(const Range1D &other) const = default;
   friend constexpr bool intersects(const Range1D &r1, const Range1D &r2) {
@@ -28,6 +30,10 @@ template <typename DimensonT> struct Range1D {
     return value >= p && value < p2;
   };
 
+  constexpr auto begin() const noexcept {
+    return std::views::iota(p, p2).begin();
+  }
+  constexpr auto end() const noexcept { return std::views::iota(p, p2).end(); }
   constexpr auto as_range() const noexcept { return std::views::iota(p, p2); };
 };
 

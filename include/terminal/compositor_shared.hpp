@@ -39,11 +39,10 @@ using SOA = util::soa::SOA<util::soa::memory_layout::DynamicArray, XPos, YPos,
 
 template <class HANDLE> struct ContigousRenderRegion {
   HANDLE handle;
-  X xStart;
-  X xEnd;
+  XPos range;
 
-  constexpr auto begin() { return xStart; }
-  constexpr auto end() { return xEnd; }
+  //   constexpr auto begin() { return xStart; }
+  //   constexpr auto end() { return xEnd; }
 };
 
 using CRR = ContigousRenderRegion<Handle>;

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "compositor_shared.hpp"
 #include "onedrange.hpp"
-#include <compare>
 namespace geom {
 
 template <typename X, typename Y, typename W, typename H> struct RectSafe {
