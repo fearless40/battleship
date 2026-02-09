@@ -171,6 +171,20 @@ add_executable(
    simpleui.cpp
 )
 
+add_executable(
+   adam.fireapp
+   fireapp.cpp
+)
+
+target_link_libraries(
+   adam.fireapp
+   PRIVATE
+      adam.geom
+      adam.util
+      adam.terminal
+
+)
+
 target_link_libraries(
    battleship.battleship
    PUBLIC

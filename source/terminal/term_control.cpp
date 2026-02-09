@@ -24,13 +24,19 @@ static constexpr char OSC[] = "\x9D";
 
 static constexpr char KITTYKEY_CODE_PROTOCOL_ON[] = CSI ">1u";
 static constexpr char KITTYKEY_CODE_PROTOCOL_OFF[] = CSI "<u";
-static constexpr char KITTYKEY_ENHACEMENT[] =
+static constexpr char KITTYKEY_ENHACEMENT_ON[] =
     CSI "=11u"; // Disambiguate escape codes, report event types, report all
                 // keys as escape codes
+static constexpr char KITTYKEY_ENHACEMENT_OFF[] = CSI "=1u";
 static constexpr char VT200_MOUSE_ON[] = CSI "?1000h";
+static constexpr char VT200_MOUSE_OFF[] = CSI "?1000l";
 static constexpr char MOUSE_BUTTON_ALL_EVENTS_ON[] = CSI "?1002h";
+static constexpr char MOUSE_BUTTON_ALL_EVENTS_OFF[] = CSI "?1002l";
 static constexpr char MOUSE_MOVEMENT_EVENTS_ON[] = CSI "?1003h";
+static constexpr char MOUSE_MOVEMENT_EVENTS_OFF[] = CSI "?1003l";
 static constexpr char SGR_MOUSE_ON[] = CSI "?1006h";
+static constexpr char SGR_MOUSE_OFF[] = CSI "?1006l";
+static constexpr char RESET_TERM[] = "\ec";
 #undef CSI
 } // namespace codes
 
@@ -79,8 +85,17 @@ TermControl::~TermControl() {
 
 void TermControl::reset_term() {
 
-  std::cout << codes::KITTYKEY_CODE_PROTOCOL_OFF;
-  std::cout << (codes::ALTSCREEN_OFF);
+  // clang-format off
+  std::cout << codes::VT200_MOUSE_OFF << '\n' 
+            << codes::KITTYKEY_CODE_PROTOCOL_OFF<< '\n'  
+            << codes::MOUSE_BUTTON_ALL_EVENTS_OFF << '\n' 
+            << codes::MOUSE_MOVEMENT_EVENTS_OFF << '\n' 
+            << codes::SGR_MOUSE_OFF<< '\n' 
+            << codes::RESET_TERM << '\n' 
+            << codes::ALTSCREEN_OFF << '\n' ;
+
+  // clang-format on
+
   tcsetattr(STDIN_FILENO, TCSANOW, &tp_old_);
 }
 
@@ -129,7 +144,7 @@ void TermControl::init_term() {
   // clang-format off
    std::cout
       << codes::KITTYKEY_CODE_PROTOCOL_ON
-      << codes::KITTYKEY_ENHACEMENT
+      << codes::KITTYKEY_ENHACEMENT_ON
       << codes::VT200_MOUSE_ON
       << codes::MOUSE_BUTTON_ALL_EVENTS_ON
       << codes::MOUSE_MOVEMENT_EVENTS_ON

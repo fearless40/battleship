@@ -171,6 +171,8 @@ constexpr bool is_mouse_protocol(const std::string_view buffer) noexcept {
   //        ((*reinterpret_cast<const std::uint16_t *>(buffer.data())) &
   //        0xFFFFFF);
 
+  if (buffer.size() <= 2)
+    return false;
   auto start = buffer.begin();
   return *start == '\e' && *(start + 1) == '[' && *(start + 2) == '<';
 }
