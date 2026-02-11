@@ -1,7 +1,9 @@
 #pragma once
 
+#include "compositor_shared.hpp"
 #include "pixel.hpp"
 #include <memory>
+#include <ranges>
 #include <type_traits>
 
 namespace term {
@@ -11,34 +13,54 @@ using Pixel_Full = pixel::Pixel<pixel::FormatFlags, pixel::Color,
                                 pixel::BgColor, pixel::ASCII>;
 
 template <class PixelFormat> class Image {
+public:
+  using X = compositor::X;
+  using Y = compositor::Y;
+  using Width = compositor::Width;
+  using Height = compositor::Height;
+
 private:
-  unsigned int width_;
-  unsigned int height_;
+  Width width_;
+  Height height_;
   std::unique_ptr<PixelFormat[]> buffer;
 
-  constexpr PixelFormat *pixel_at(unsigned int x, unsigned int y) {
-    return &buffer[x * height_ + y];
+  constexpr PixelFormat *pixel_at(X x, Y y) {
+    return &buffer[x.underlying() * height_.underlying() + y.underlying()];
   }
 
-  constexpr const PixelFormat *pixel_at(unsigned int x, unsigned int y) const {
-    return &buffer[x * height_ + y];
+  constexpr const PixelFormat *pixel_at(X x, Y y) const {
+    return &buffer[x.underlying() * height_.underlying() + y.underlying()];
   }
 
 public:
   using PXFormat = PixelFormat;
-  Image(unsigned int width, unsigned int height)
+  Image(compositor::Width width, compositor::Height height)
       : width_(width), height_(height),
         buffer(new PixelFormat[width_ * height_]) {};
 
-  constexpr unsigned int width() const noexcept { return width_; }
-  constexpr unsigned int height() const noexcept { return height_; }
+  constexpr compositor::Width width() const noexcept { return width_; }
+  constexpr compositor::Height height() const noexcept { return height_; }
+  static constexpr std::size_t pixel_byte_size() noexcept {
+    return sizeof(PixelFormat);
+  }
+  constexpr std::size_t row_byte_size() const noexcept {
+    return pixel_byte_size() * width_.underlying();
+  }
 
-  constexpr void set_pixel(unsigned int x, unsigned int y, PixelFormat &p) {
+  constexpr std::span<PixelFormat> row(compositor::Y row_) {
+    return {pixel_at(compositor::X{0}, row_), width_.underlying()};
+  }
+
+  constexpr auto rows() const {
+    return std::views::iota(0, height_.underlying()) |
+           std::views::transform([this](auto &index) { return row(Y{index}); });
+  }
+
+  constexpr void set_pixel(X x, Y y, const PixelFormat &p) {
     *pixel_at(x, y) = p;
   }
 
-  constexpr const PixelFormat &pixel(unsigned int x,
-                                     unsigned int y) const noexcept {
+  constexpr const PixelFormat &pixel(X x, Y y) const noexcept {
     return *pixel_at(x, y);
   }
 };

@@ -65,3 +65,9 @@ static constexpr auto handle(IteratorSOA &it) {
 } // namespace soa
 
 } // namespace term::compositor
+//
+inline constexpr std::size_t
+operator*(const term::compositor::Width w,
+          const term::compositor::Height h) noexcept {
+  return w.underlying() * h.underlying();
+}
