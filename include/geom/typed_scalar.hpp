@@ -1,32 +1,25 @@
 #pragma once
-#include <compare>
 
+#include <compare>
 namespace geom {
 
-template <typename TypedPositionT> struct TypedDimension {
-  using position_t = TypedPositionT;
-  using underlying_t = typename position_t::underlying_t;
-  using type = TypedDimension<TypedPositionT>;
+namespace detail {
+struct DefaultConverter {};
+} // namespace detail
+
+template <typename T, typename Tag,
+          typename Converter = detail::DefaultConverter>
+struct TypedScalar {
+
+  using type = TypedScalar<T, Tag, Converter>;
+  using underlying_t = T;
 
   underlying_t value;
-
-  constexpr underlying_t underlying() const noexcept { return value; }
-
-  constexpr TypedDimension(underlying_t value_) : value(value_) {}
-
-  constexpr TypedDimension(position_t const &first, position_t const &second)
-      : value(second.underlying() - first.underlying()) {}
 
   constexpr std::strong_ordering
   operator<=>(type const &other) const noexcept = default;
 
-  constexpr std::strong_ordering
-  operator<=>(position_t const &other) const noexcept {
-    return other.underlying() <=> value;
-  }
-
-  constexpr bool operator==(type const &other) const noexcept = default;
-  constexpr bool operator!=(type const &other) const noexcept = default;
+  constexpr underlying_t underlying() const noexcept { return value; }
 
   constexpr type &operator+=(type const &other) const noexcept {
     value += other.value;
@@ -73,14 +66,6 @@ template <typename TypedPositionT> struct TypedDimension {
                                   const type &right) noexcept {
     return type{left.value - right.value};
   }
-
-  friend constexpr position_t operator+(const position_t &left,
-                                        const type &dimension) noexcept {
-    return position_t{left.underlying() + dimension.underlying()};
-  }
-  friend constexpr position_t operator-(const position_t &left,
-                                        const type &dimension) noexcept {
-    return position_t{left.underlying() - dimension.underlying()};
-  }
 };
+
 } // namespace geom
