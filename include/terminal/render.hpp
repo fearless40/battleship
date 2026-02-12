@@ -114,11 +114,11 @@ void render_to_buffer(const Image<PXFormat> &img,
 
   auto out = buffer.begin();
 
-  out = relative(out, 20, 'A');
-  out = relative(out, 30, 'd');
+  // out = relative(out, 20, 'A');
+  // out = relative(out, 30, 'd');
 
-  for (unsigned int x = 0; x < img.width(); ++x) {
-    for (unsigned int y = 0; y < img.height(); ++y) {
+  for (unsigned int x = 0; x < img.width().underlying(); ++x) {
+    for (unsigned int y = 0; y < img.height().underlying(); ++y) {
       auto &p = img.pixel(x, y);
 
       if constexpr (pixel::PixelFormatDetails<PXFormat>::is_color) {

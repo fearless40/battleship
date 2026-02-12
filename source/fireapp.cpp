@@ -1,11 +1,41 @@
+#include "compositor_shared.hpp"
 #include "keyparser.hpp"
+#include "pixel.hpp"
 #include <chrono>
 #include <compositor.hpp>
 #include <ctime>
+#include <image.hpp>
+#include <iostream>
 #include <print>
+#include <ranges>
+#include <render.hpp>
 #include <term_control.hpp>
 
-void render_frame() {};
+term::Image<term::pixel::Pixel<term::pixel::BgColor>> bgColor{
+    term::compositor::Width{30}, term::compositor::Height{30}};
+
+int offset{0};
+unsigned char buffer[8096];
+
+void render_frame() {
+  unsigned char blue = 90;
+  unsigned char step = 5;
+
+  auto output = std::span<unsigned char>(buffer, 8096);
+
+  for (auto row : bgColor.rows()) {
+    for (auto [col, pixel] : std::views::enumerate(row)) {
+      pixel.bgblue = (blue + step * col) + offset;
+      pixel.bggreen = 0;
+      pixel.bgred = 0;
+    }
+  }
+
+  term::details::render_to_buffer(bgColor, output);
+
+  std::cout << buffer;
+  std::cout << "\e[H";
+};
 
 int main(int argv, char *arguments[]) {
 

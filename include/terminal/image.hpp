@@ -2,6 +2,7 @@
 
 #include "compositor_shared.hpp"
 #include "pixel.hpp"
+#include <cstddef>
 #include <memory>
 #include <ranges>
 #include <type_traits>
@@ -48,12 +49,13 @@ public:
   }
 
   constexpr std::span<PixelFormat> row(compositor::Y row_) {
-    return {pixel_at(compositor::X{0}, row_), width_.underlying()};
+    return {pixel_at(compositor::X{0}, row_),
+            static_cast<std::size_t>(width_.underlying())};
   }
 
-  constexpr auto rows() const {
+  constexpr auto rows() {
     return std::views::iota(0, height_.underlying()) |
-           std::views::transform([this](auto &index) { return row(Y{index}); });
+           std::views::transform([this](auto index) { return row(Y{index}); });
   }
 
   constexpr void set_pixel(X x, Y y, const PixelFormat &p) {
