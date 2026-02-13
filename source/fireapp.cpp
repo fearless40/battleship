@@ -20,7 +20,8 @@ term::Image<pixel::Pix> color{term::compositor::Width{30},
                               term::compositor::Height{30}};
 
 int offset{0};
-unsigned char buffer[8096];
+int offset_dir = 1;
+unsigned char buffer[80960];
 
 void render_frame() {
   unsigned char blue = 90;
@@ -33,11 +34,16 @@ void render_frame() {
       pixel.blue = (blue + step * col) + offset;
       pixel.green = pixel.blue;
       pixel.red = pixel.blue;
+      // std::cout << pixel.value;
     }
+    // std::cout << '\n';
   }
 
-  offset++;
-  offset = std::clamp(offset, 0, 200);
+  offset += offset_dir;
+  if (offset > 200)
+    offset_dir = -1;
+  else if (offset <= 1)
+    offset_dir = 1;
   term::details::render_to_buffer(color, output);
 
   std::cout << buffer;
@@ -50,8 +56,15 @@ int main(int argv, char *arguments[]) {
   auto start_time = std::chrono::steady_clock::now();
   bool loop = true;
 
+  const char letters[] = "1234567890";
   for (auto row : color.rows()) {
-    std::ranges::fill(row, pixel::Pix{'X', {0, 0, 0}});
+    for (auto [col, pixel] : std::views::enumerate(row)) {
+      auto div = std::div(col, 10ULL);
+      pixel.value = letters[div.rem];
+      pixel.blue = 0;
+      pixel.green = 0;
+      pixel.red = 0;
+    }
   }
 
   std::println("Starting...");

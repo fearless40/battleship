@@ -26,11 +26,11 @@ private:
   std::unique_ptr<PixelFormat[]> buffer;
 
   constexpr PixelFormat *pixel_at(X x, Y y) {
-    return &buffer[x.underlying() * height_.underlying() + y.underlying()];
+    return &buffer[y.underlying() * width_.underlying() + x.underlying()];
   }
 
   constexpr const PixelFormat *pixel_at(X x, Y y) const {
-    return &buffer[x.underlying() * height_.underlying() + y.underlying()];
+    return &buffer[y.underlying() * width_.underlying() + x.underlying()];
   }
 
 public:

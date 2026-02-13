@@ -117,8 +117,8 @@ void render_to_buffer(const Image<PXFormat> &img,
   // out = relative(out, 20, 'A');
   // out = relative(out, 30, 'd');
 
-  for (unsigned int x = 0; x < img.width().underlying(); ++x) {
-    for (unsigned int y = 0; y < img.height().underlying(); ++y) {
+  for (unsigned int y = 0; y < img.height().underlying(); ++y) {
+    for (unsigned int x = 0; x < img.width().underlying(); ++x) {
       auto &p = img.pixel(x, y);
 
       if constexpr (pixel::PixelFormatDetails<PXFormat>::is_color) {
@@ -138,7 +138,7 @@ void render_to_buffer(const Image<PXFormat> &img,
     // out = move_down_relative(out, 1);
     *out = '\n';
     ++out;
-    // out = move_left_relative(out, img.width());
+    // out = move_left_relative(out, img.width().underlying());
   }
   *++out = 0;
 }
